@@ -49,17 +49,31 @@ TÊTE DE MÂT (PCB analysé)              AFFICHEUR (dans le bateau)
 
 ## Capteurs de la tête de mât
 
-| Fil   | Couleur | Capteur              | Type de signal attendu          |
-|-------|---------|----------------------|---------------------------------|
-| +V    | Rouge   | —                    | +12V DC (9-16.5V acceptés)      |
-| GND   | Noir    | —                    | Masse                           |
-| DIR   | Bleu    | Girouette            | Analogique (potentiomètre) ou impulsions |
-| SPD   | Vert    | Anémomètre (IR)      | Train d'impulsions (fréquence ∝ vitesse) |
+| Fil   | Couleur | Capteur              | Signal mesuré                              |
+|-------|---------|----------------------|--------------------------------------------|
+| +V    | Rouge   | —                    | +12V DC (9-16.5V acceptés)                 |
+| GND   | Noir    | —                    | Masse                                      |
+| DIR   | Bleu    | Girouette            | PWM période fixe ~1280 µs, DC = angle      |
+| SPD   | Vert    | Anémomètre (IR)      | Open-drain, 8 impulsions/tour (fréquence ∝ vitesse) |
 
-### Émetteur/récepteur IR (dessous PCB)
-- Compte les tours de l'anémomètre par interruption du faisceau IR
-- Génère un **train d'impulsions** sur le fil Vert : plus le vent est fort, plus la fréquence est élevée
-- Visible à l'oscilloscope en faisant tourner l'anémomètre à la main
+### Fil Bleu — Girouette (PWM)
+
+Signal PWM à période fixe mesurée à l'oscilloscope :
+- **Période** : ~1280 µs (fixe)
+- **Largeur d'impulsion** : 99 µs (min, ~0°) à 900 µs (max, ~360°)
+- **Tension** : ~4.8V crête → pont diviseur 10 kΩ/15 kΩ pour ramener à 2.9V max (ESP8266 3.3V)
+- **GPIO** : D2 (GPIO4 NodeMCU)
+- **Formule** : `angle = (pw - pw_min) / (pw_max - pw_min) × 360`
+- Auto-calibration min/max en cours d'exécution ; `/reset_calib` pour remettre à zéro
+
+### Fil Vert — Anémomètre (IR optique)
+
+Roue à 8 fentes — 8 fronts descendants par tour :
+- **Type** : open-drain, pull-up 10 kΩ externe vers 3.3V
+- **Niveaux** : 3.295V (pale devant faisceau) / 0.7V (fente ouverte)
+- **GPIO** : D4 (GPIO2 NodeMCU) — ⚠ doit être HIGH au boot (pull-up branché)
+- **ISR** : comptage FALLING, `IRAM_ATTR`
+- **Calcul** : `spd_hz = pulses / s` (impulsions/s) ; `rpm = spd_hz × 60 / 8`
 
 ## Protocole de communication (bus AS-1 vers afficheur)
 
@@ -88,26 +102,27 @@ ALIMENTATION 12V
 └──────────────┘        │
                         └── GND commun ESP8266
 
-LECTURE SIGNAUX CAPTEURS
-                        fil Bleu (girouette) ───────── GPIO input ESP  (ou oscillo CH1)
-                        fil Vert (anémomètre) ──────── GPIO input ESP  (ou oscillo CH2)
+FIL BLEU (girouette — PWM ~4.8V crête)
+  fil Bleu ──┬── 10 kΩ ──┬── D2 (GPIO4)
+             │           │
+            15 kΩ      (entrée ESP, 2.9V max)
+             │
+            GND
 
-ESP8266 (optionnel — pour lire les signaux bruts)
+FIL VERT (anémomètre — open-drain)
+  3.3V ── 10 kΩ ──┬── D4 (GPIO2)
+                  │
+  fil Vert ───────┘  (drain collecteur ouvert, tiré vers 3.3V)
+
+ESP8266 NodeMCU v2
 ┌──────────────────────┐
-│  GPIO4  ─────────────┼── fil Bleu  (direction)
-│  GPIO5  ─────────────┼── fil Vert  (vitesse IR)
-│  3.3V + diviseur R   │   ⚠ mettre diviseur 12V→3.3V si signal en 12V
-│  USB ────────────────┼── PC (debug)
+│  D2 (GPIO4) ─────────┼── fil Bleu  via pont div 10k/15k
+│  D4 (GPIO2) ─────────┼── fil Vert  via pull-up 10k → 3.3V
+│  USB ────────────────┼── PC (flash + debug)
 └──────────────────────┘
-
-MODULE MAX3485 (si on veut décoder le bus AS-1 vers l'afficheur)
-→ à brancher entre les fils AS-1 (orange selon doc) et l'ESP
-→ 38400 bauds, protocole à reverse-engineer
+  AP WiFi : WindS400-Banc / wind1234
+  IP      : 192.168.4.1
 ```
-
-> ⚠ **Avant de brancher les fils Bleu/Vert sur l'ESP** : mesurer la tension au multimètre
-> sous 12V d'alimentation — si signal en 12V, mettre un pont diviseur (10kΩ + 4.7kΩ) pour
-> ramener à 3.3V compatible ESP8266.
 
 ---
 
@@ -162,20 +177,24 @@ upload_speed  = 921600
 
 ## API REST embarquée
 
-| Route   | Réponse                                      |
-|---------|----------------------------------------------|
-| `GET /` | Page HTML avec compas animé                  |
-| `GET /data` | JSON mis à jour chaque seconde           |
+| Route            | Réponse                                      |
+|------------------|----------------------------------------------|
+| `GET /`          | Page HTML avec compas animé + vitesse vent   |
+| `GET /data`      | JSON mis à jour chaque seconde               |
+| `GET /reset_calib` | Remet pw_min/pw_max à zéro (recalibration girouette) |
 
 Exemple de réponse `/data` :
 ```json
 {
-  "dir": 245.0,
-  "speed": 12.3,
-  "unit": "M",
-  "ref": "R",
-  "valid": true,
-  "age": 1
+  "angle":  245.0,
+  "pw_us":  650,
+  "pw_min": 99,
+  "pw_max": 900,
+  "spd_hz": 157.73,
+  "rpm":    1183.0,
+  "spd_ms": 4.89,
+  "valid":  true,
+  "age":    1
 }
 ```
 
@@ -282,6 +301,45 @@ Cylindre (coupe) :
 - La cage centre l'aimant automatiquement — pas de problème d'alignement
 - Magnétisation **diamétrale** (pôles N/S sur les côtés du disque, perpendiculaires
   à l'axe de rotation) — c'est le montage standard pour encodeur Hall 360°
+
+---
+
+## Calibration anémomètre — 29/06/2026
+
+### Méthode
+Sèche-cheveux comme source de flux concentré + anémomètre de référence en vis-à-vis.
+8 points mesurés sur la plage 2.8–6.4 m/s, relevés en tr/min sur la page web.
+
+### Données brutes
+
+| m/s (réf) | tr/min (WindS400) | SPD_K calculé | Statut |
+|-----------|-------------------|---------------|--------|
+| 2.8       | 337               | 0.0623        | écarté (seuil démarrage) |
+| 3.1       | 426               | 0.0546        | écarté (seuil démarrage) |
+| 3.5       | 800               | 0.0328        | utilisé |
+| 3.9       | 1032              | 0.0283        | utilisé |
+| 4.2       | 874               | 0.0360        | **outlier écarté** (RPM < 3.9 m/s) |
+| 4.8       | 1183              | 0.0304        | utilisé |
+| 5.7       | 1365              | 0.0313        | utilisé |
+| 6.4       | 1500              | 0.0320        | utilisé |
+
+> Le point 4.2 m/s → 874 tr/min est physiquement impossible (RPM inférieur au point 3.9 m/s) ;
+> instabilité du sèche-cheveux lors de cette mesure.
+
+### Résultat
+
+```
+SPD_K = 0.031  (m/s par Hz impulsions)
+spd_ms = spd_hz × SPD_K
+```
+
+Erreur max ±3% sur la plage 4.8–6.4 m/s. Plage basse (< 4 m/s) non fiable par cette méthode.
+
+**Formule de recalibration :**
+```
+SPD_K = m/s_réf × 7.5 / tr/min_WindS400
+        (7.5 = 60 s / 8 fentes)
+```
 
 ---
 
