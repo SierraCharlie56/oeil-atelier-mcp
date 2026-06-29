@@ -1,0 +1,5 @@
+.venv/
+.claude/
+*.py.v[0-9]*
+__pycache__/
+*.pyc
