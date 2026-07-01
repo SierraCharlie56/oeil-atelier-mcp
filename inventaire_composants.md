@@ -235,4 +235,30 @@
 
 ---
 
+## RAMPS 1.3 + RepRapDiscount Full Graphic Smart Controller
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Shield | RAMPS 1.3 (compatible 1.4/1.5/1.6, brochage EXP1/EXP2 identique) |
+| Contrôleur écran | ST7920, LCD graphique 128×64 |
+| Interface écran | Série 3 fils (PSB déjà câblé à GND sur le shield) |
+| Hôte | Arduino Mega 2560 (pins 22-53 occupées par le shield) |
+
+**Brochage écran (EXP1/EXP2 → Mega, standard Marlin/RAMPS) :**
+
+| Fonction | Broche Mega |
+|----------|-------------|
+| Clock (E) | 23 |
+| Data (R/W) | 17 |
+| CS (RS) | 16 |
+| Reset | Non connecté (`U8X8_PIN_NONE`) |
+
+**Accès aux broches Serial1 (D18/D19) malgré le shield :** disponibles via les connecteurs d'endstop **Z-MIN** (D18, TX1) et **Z-MAX** (D19, RX1), chacun un connecteur 3 broches Signal/GND/+5V — pratique pour brancher un module UART externe (ex. GPS via ST3232) sans souder sur la carte.
+
+**Alimentation externe 12V :** disponible en continu (non commutée) sur les bornes à vis d'entrée d'alimentation principale de la RAMPS — vérifier la tension réelle au multimètre avant de piquer dessus (peut être 12V ou 24V selon l'alimentation utilisée).
+
+**Usage :** projet banc GPS GP-04S — écran de contrôle réutilisé depuis un kit imprimante 3D, piloté par bibliothèque U8g2 (`U8G2_ST7920_128X64_F_SW_SPI`), GPS alimenté et connecté via les connecteurs endstop Z.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
