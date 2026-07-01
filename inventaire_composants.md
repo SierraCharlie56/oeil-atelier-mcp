@@ -309,4 +309,19 @@
 
 ---
 
+## PCF8574T — Module adaptateur I2C pour LCD (backpack)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Marquage CI | PCF8574T ABX919 |
+| Fabricant | NXP (ou compatible) |
+| Fonction | Expandeur d'E/S I2C 8 bits, pilotage LCD HD44780 (16x2, 20x4) |
+| Adressage | Cavaliers A0/A1/A2 (adresse I2C configurable, plage 0x20-0x27 ou 0x38-0x3F selon variante) |
+| Réglage contraste | Trimmer bleu intégré (P103) |
+| Connecteur hôte | GND, VCC, SDA, SCL |
+
+**Usage :** transforme un écran LCD alphanumérique parallèle (6+ fils) en interface I2C 2 fils (SDA/SCL) — pratique pour économiser des broches sur microcontrôleur (Arduino, ESP8266/ESP32).
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
