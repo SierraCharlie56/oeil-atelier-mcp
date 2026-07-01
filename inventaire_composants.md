@@ -285,4 +285,28 @@
 
 ---
 
+## BC212L — Transistor PNP faible bruit
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Fairchild Semiconductor |
+| Marquage | BC212L (+ code date/lot "13C") |
+| Boîtier | TO-92 |
+| Type | PNP, usage général / basse fréquence, faible bruit |
+| Vceo max | ~50V |
+| Ic max | ~100mA |
+| hFE (grade L) | Élevé, typiquement 100-800 |
+
+**Brochage (TO-92, face plate vers soi, à confirmer au multimètre) :**
+
+| Broche | Fonction |
+|--------|----------|
+| 1 (gauche) | Émetteur |
+| 2 (centre) | Base |
+| 3 (droite) | Collecteur |
+
+**Usage :** amplification faible signal, préampli audio, complémentaire du BC182L (NPN) pour montages push-pull.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
