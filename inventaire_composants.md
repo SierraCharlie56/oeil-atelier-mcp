@@ -261,4 +261,28 @@
 
 ---
 
+## MP1584EN — Module convertisseur buck (step-down) ajustable
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Monolithic Power Systems |
+| Marquage CI | MP1584EN D5808297 |
+| Boîtier | SOIC-8 |
+| Tension d'entrée | Jusqu'à 24V (typique 4,5V-28V) |
+| Courant de sortie | 3A max |
+| Sortie | Ajustable via trimmer (potentiomètre bleu) |
+| Composants clés | Inductance blindée 15µH ("150"), diode Schottky SS34 |
+
+**Brochage module :**
+
+| Borne | Fonction |
+|-------|----------|
+| VIN- | Masse entrée |
+| VIN+ | +Alimentation entrée (jusqu'à 24V) |
+| VOUT-/VOUT+ | Sortie régulée (côté opposé, à ajuster via trimmer) |
+
+**Usage :** conversion 24V → 5V pour alimentation ESP8266 (banc d'essai WindS400) — variante plus performante des modules "Mini360" (MP2307), même principe d'ajustement par trimmer.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
