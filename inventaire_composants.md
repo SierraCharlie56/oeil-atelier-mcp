@@ -348,4 +348,27 @@
 
 ---
 
+## VS1838B — Récepteur infrarouge intégré
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Marquage | VS 1838B |
+| Équivalent | TSOP1838 / TSOP4838 (variante générique) |
+| Boîtier | TO-92 modifié, blindage métallique |
+| Fréquence porteuse | 38 kHz |
+| Alimentation | 2,7V – 5,5V |
+| Sortie | Numérique, signal déjà démodulé |
+
+**Brochage (3 broches) :**
+
+| Broche | Fonction |
+|--------|----------|
+| 1 | OUT (signal démodulé) |
+| 2 | GND |
+| 3 | VCC |
+
+**Usage :** réception de télécommande infrarouge (protocoles NEC, RC5, Sony, etc.). Bibliothèque `IRremote` très répandue sur Arduino/ESP pour le décodage.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
