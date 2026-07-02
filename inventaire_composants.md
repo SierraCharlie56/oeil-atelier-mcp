@@ -324,4 +324,28 @@
 
 ---
 
+## Module capteur à effet Hall (A3144 + LM393) — sortie A0/D0
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Élément Hall | A3144 (marquage "44E 506"), boîtier TO-92 |
+| Comparateur | LM393 (marquage "LM393 PGCV"), boîtier SOIC-8 |
+| Silkscreen PCB | "Sensor" (A0/GND/VCC/D0) et "Power" |
+| Réglage seuil | Trimmer/potentiomètre rond intégré (ajuste le seuil de bascule du LM393) |
+
+**Connecteur (header 4 broches) :**
+
+| Broche | Fonction |
+|--------|----------|
+| A0 | Sortie analogique — tension brute (buffée) proportionnelle au champ magnétique perçu par le A3144 |
+| GND | Masse |
+| VCC | Alimentation |
+| D0 | Sortie numérique tout-ou-rien — sortie du LM393, bascule 0/1 quand le signal A0 dépasse le seuil réglé par le trimmer |
+
+**Fonctionnement :** pas de cavalier de sélection — les deux sorties A0 et D0 sont actives simultanément et en permanence, indépendantes l'une de l'autre.
+
+**Usage :** détection de champ magnétique (proximité, comptage de tours, fin de course sans contact). A0 pour une mesure d'intensité, D0 pour un seuil de détection binaire directement exploitable par un GPIO microcontrôleur.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
