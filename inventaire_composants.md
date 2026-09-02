@@ -371,4 +371,33 @@
 
 ---
 
+## DS18B20 — Sonde de température numérique 1-Wire
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Maxim Integrated (ex-Dallas Semiconductor) |
+| Boîtier | TO-92 (version nue) ou sonde inox étanche avec câble |
+| Alimentation | 3,0V – 5,5V |
+| Mode parasite power | Oui (alimentation via la ligne data seule, sans fil VCC séparé) |
+| Plage de mesure | −55°C à +125°C |
+| Précision | ±0,5°C sur la plage −10°C à +85°C (dégradée hors de cette plage) |
+| Résolution | Configurable 9 à 12 bits (0,5°C / 0,25°C / 0,125°C / 0,0625°C) |
+| Temps de conversion | 750ms max en 12 bits (plus rapide si résolution réduite) |
+| Interface | 1-Wire (bus série sur un seul fil data) |
+| Identifiant | Code ROM 64 bits unique gravé en usine — plusieurs sondes cohabitent sur le même bus |
+
+**Câblage (3 fils, version sonde étanche) :**
+
+| Fil | Fonction |
+|-----|----------|
+| Rouge | VCC (3,3-5V) |
+| Noir | GND |
+| Jaune (ou blanc) | DATA (bus 1-Wire) |
+
+**Résistance de tirage (pull-up) :** obligatoire sur DATA, **4,7kΩ entre DATA et VCC** — sans elle, aucune communication.
+
+**Usage :** mesure de température précise multi-points sur un seul GPIO (adressage individuel par ROM code). Bibliothèques `OneWire` + `DallasTemperature` sur Arduino/ESP32/ESP8266. Utilisé dans le [projet de régulation du bain de refroidissement tube laser 110W](projet_regulation_laser.md) — une sonde dans le bain, une sur le retour d'eau laser.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
