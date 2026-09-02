@@ -28,7 +28,8 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] **Choisir la plateforme** — décidé le 2026-09-02 : **ESP32-WROOM-32** (carte de dev en stock avec écran 1,9" intégré, cf. identification ci-dessous). Nécessaire vu le nombre d'E/S (relais sécurité, 2 LED, 2 MOC3023, 1-Wire, entrée découpeuse) — l'ESP8266 aurait obligé à mobiliser les broches de strapping boot.
 - [x] **Sémantique du bouton "forcer fermeture" du site web** — décidé le 2026-09-02 : **bypass total**. Usage : opérations de maintenance nécessitant la sécurité MYJG fermée (ex. vérifier la continuité de la chaîne de sécurité — porte + autres capots en série avec ce relais — indépendamment de l'état du refroidissement). Voir garde-fous ci-dessous.
 - [x] **Câblage détaillé MOC3023 → BTA16-600BW** — fait le 2026-09-02, voir schéma et valeurs ci-dessous.
-- [ ] Circuit de commande du relais de sécurité (transistor + diode de roue libre, ou module relais tout fait — un GPIO ne peut pas piloter la bobine directement).
+- [x] **Circuit de commande du relais de sécurité** — fait le 2026-09-02, voir schéma ci-dessous.
+- [ ] Vérifier le courant réel de la bobine du relais (mesure résistance bobine au multimètre) pour ajuster R_B si besoin.
 - [ ] Firmware : logique de régulation + protections + site web sécurisé.
 
 ## Carte ESP32 identifiée
@@ -94,6 +95,46 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
 | R_G (côté secteur, gâchette) | 330-360Ω, 1W, tenue 350V+ | Valeur standard datasheet pour 230V (180Ω pour 120V, 330-360Ω pour 240V) |
 
 **Nomenclature par canal :** 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W.
+
+## Circuit de commande du relais de sécurité (bobine 3V)
+
+Un GPIO ne peut pas piloter une bobine de relais directement (courant insuffisant + pas de protection contre le pic inductif à la coupure). Transistor NPN en commutation basse tension + diode de roue libre.
+
+**Rappel logique fail-safe :** GPIO HIGH → transistor conduit → bobine alimentée → contact NO fermé → ligne MYJG autorisée. GPIO LOW/flottant/reset → bobine non alimentée → contact ouvert → laser bloqué par défaut.
+
+```
+                    +3,3V (rail ESP32)
+                         │
+                    ┌────┴────┐
+                    │ Bobine  │  relais 3V
+                    │ relais  │
+                    └────┬────┘
+                         │
+              ┌──────────┤◄── cathode (bague) de D1 (1N4007) ici
+              │          │    D1 en // sur la bobine, anode côté collecteur
+              │          │
+              │     Collecteur (NPN, ex. 2N2222 / BC337)
+              │          │
+   ESP32 GPIO27──R_B──── Base
+        (470-680Ω)       │
+                     Émetteur ─── GND
+                         │
+              R_BE (10kΩ) entre Base et GND
+              (pull-down anti-flottement au boot)
+```
+
+**Valeurs :**
+
+| Composant | Valeur | Rôle |
+|---|---|---|
+| Transistor | NPN générique (2N2222, BC337, 2N3904...) | Commutation bobine (typiquement 30-80mA pour un petit relais 3V) |
+| R_B (base) | 470-680Ω, 1/4W | Sature le transistor avec marge (calcul : Ib=Ic/β_forcé, β_forcé≈20) |
+| R_BE (base-émetteur) | 10kΩ, 1/4W | Maintient le transistor bloqué si le GPIO flotte au démarrage — important pour le fail-safe |
+| D1 (roue libre) | 1N4007 (ou 1N4148) | Absorbe le pic inductif à la coupure — cathode côté +3,3V |
+
+**À vérifier :** courant réel de la bobine (résistance mesurée au multimètre ou valeur imprimée type "DC3V XXΩ") pour ajuster R_B si besoin — calcul ci-dessus basé sur une hypothèse ~75mA.
+
+**Amélioration possible (optionnelle) :** si le relais est SPDT (contact NC disponible), le câbler vers une entrée ESP32 libre (ex. GPIO35) pour que le firmware vérifie que le relais a réellement changé d'état — utile pour détecter un contact collé sur une ligne de sécurité.
 
 ## Sécurité — logique fail-safe du relais
 
