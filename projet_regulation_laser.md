@@ -19,10 +19,19 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 
 ## À faire / en attente
 
-- [ ] **Mesurer les specs du compresseur** (courant nominal, courant de démarrage/LRA) — aucune doc constructeur disponible (vieux matériel, fonctionne bien). Nécessaire pour valider le dimensionnement du BTA16-600BW et vérifier si un snubber est requis.
+- [x] **Mesurer les specs du compresseur** — fait le 2026-09-02 : démarrage ~7A, fonctionnement 1,4A. Dimensionnement BTA16-600BW validé (voir ci-dessous).
 - [ ] **Choisir ESP32 ou ESP8266** — le brochage NodeMCU diffère entre les deux, à trancher avant de fixer l'assignation des GPIO.
-- [ ] Câblage détaillé MOC3023 → BTA16-600BW pour chaque charge (compresseur / canne).
+- [ ] Câblage détaillé MOC3023 → BTA16-600BW pour chaque charge (compresseur / canne), avec résistance de gâchette (180-330Ω à préciser).
 - [ ] Firmware : logique de régulation + protections.
+
+## Specs compresseur mesurées (2026-09-02)
+
+| | Valeur mesurée | Marge vs BTA16-600BW (16A) |
+|---|---|---|
+| Courant de démarrage (pointe) | ~7A | ×2,3 |
+| Courant en fonctionnement | 1,4A | ×11 |
+
+**Conclusion :** BTA16-600BW largement dimensionné, pas de changement de triac nécessaire. Suffixe **BW** = version snubberless (haute tolérance au dv/dt de commutation) → pas de réseau RC snubber requis pour cette charge inductive. Dissipateur thermique non indispensable vu le courant continu de 1,4A (marge de sécurité possible si disponible).
 
 ## Points de conception validés
 
