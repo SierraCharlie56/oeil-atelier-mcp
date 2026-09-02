@@ -20,9 +20,20 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 ## À faire / en attente
 
 - [x] **Mesurer les specs du compresseur** — fait le 2026-09-02 : démarrage ~7A, fonctionnement 1,4A. Dimensionnement BTA16-600BW validé (voir ci-dessous).
-- [ ] **Choisir ESP32 ou ESP8266** — le brochage NodeMCU diffère entre les deux, à trancher avant de fixer l'assignation des GPIO.
+- [x] **Choisir ESP32 ou ESP8266** — décidé le 2026-09-02 : ESP8266 (D1 Mini ou NodeMCU au choix, même GPIO mapping, disponibles en stock). Voir plan de brochage ci-dessous.
 - [ ] Câblage détaillé MOC3023 → BTA16-600BW pour chaque charge (compresseur / canne), avec résistance de gâchette (180-330Ω à préciser).
 - [ ] Firmware : logique de régulation + protections.
+
+## Plan de brochage ESP8266 (D1 Mini / NodeMCU — mapping identique)
+
+| Broche (silkscreen) | GPIO | Fonction |
+|---|---|---|
+| D5 | GPIO14 | MOC3023 #1 → compresseur |
+| D6 | GPIO12 | MOC3023 #2 → canne chauffante |
+| D7 | GPIO13 | Bus 1-Wire (DS18B20 ×2) + pull-up 4,7kΩ |
+| D1 / D2 | GPIO5 / GPIO4 | Libres (extension future, ex. écran I2C) |
+
+**Broches à éviter** (strapping au boot) : D3 (GPIO0), D4 (GPIO2), D8 (GPIO15) — un état imposé par un module externe sur ces broches au démarrage peut empêcher l'ESP8266 de booter correctement.
 
 ## Specs compresseur mesurées (2026-09-02)
 
