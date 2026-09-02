@@ -27,7 +27,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] **Mesurer les specs du compresseur** — fait le 2026-09-02 : démarrage ~7A, fonctionnement 1,4A. Dimensionnement BTA16-600BW validé (voir ci-dessous).
 - [x] **Choisir la plateforme** — décidé le 2026-09-02 : **ESP32-WROOM-32** (carte de dev en stock avec écran 1,9" intégré, cf. identification ci-dessous). Nécessaire vu le nombre d'E/S (relais sécurité, 2 LED, 2 MOC3023, 1-Wire, entrée découpeuse) — l'ESP8266 aurait obligé à mobiliser les broches de strapping boot.
 - [x] **Sémantique du bouton "forcer fermeture" du site web** — décidé le 2026-09-02 : **bypass total**. Usage : opérations de maintenance nécessitant la sécurité MYJG fermée (ex. vérifier la continuité de la chaîne de sécurité — porte + autres capots en série avec ce relais — indépendamment de l'état du refroidissement). Voir garde-fous ci-dessous.
-- [ ] Câblage détaillé MOC3023 → BTA16-600BW pour chaque charge (compresseur / canne), avec résistance de gâchette (180-330Ω à préciser).
+- [x] **Câblage détaillé MOC3023 → BTA16-600BW** — fait le 2026-09-02, voir schéma et valeurs ci-dessous.
 - [ ] Circuit de commande du relais de sécurité (transistor + diode de roue libre, ou module relais tout fait — un GPIO ne peut pas piloter la bobine directement).
 - [ ] Firmware : logique de régulation + protections + site web sécurisé.
 
@@ -61,6 +61,39 @@ Carte de dev **ESP32-WROOM-32** (puce CH340) avec écran intégré **ST7789 170�
 | Entrée état découpeuse ON/OFF | 34 | input-only, pull-down externe requis |
 
 Large marge disponible (GPIO 5, 12, 17, 19, 21, 22, 33, 35, 36, 39 libres) — aucune broche de strapping boot mobilisée pour ces signaux, contrairement à l'option ESP8266 envisagée initialement.
+
+## Câblage détaillé MOC3023 → BTA16-600BW (×2 : compresseur + canne chauffante)
+
+Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3023 — à respecter physiquement dans le coffret (pas de piste/fil basse tension à proximité du côté secteur).
+
+```
+                              AC LINE (Phase, 230V)
+                                      │
+                                   [ CHARGE ]   (compresseur ou canne)
+                                      │
+                    ┌─────────────────┴─────────────────┐
+                    │                                     │
+              BTA16 MT2 (pin3 + patte centrale) ───── MOC3023 pin4 (MT2 interne)
+                    │                                     │
+              BTA16 Gate (pin2) ◄──── R_G ──────────  MOC3023 pin6 (MT1/Gate interne)
+                    │              330-360Ω 1W
+                    │
+              BTA16 MT1 (pin1)
+                    │
+                    └───────────────────────────────────────► NEUTRE
+
+   ESP32 GPIO (13 ou 14) ──R_LED (180Ω)── MOC3023 pin1 (anode LED)
+                                            MOC3023 pin2 (cathode) ── GND ESP32
+```
+
+**Valeurs :**
+
+| Résistance | Valeur | Rôle |
+|---|---|---|
+| R_LED (côté ESP32) | 180Ω, 1/4W | Limite le courant LED du MOC3023 à ~11,7mA sous 3,3V — marge au-dessus du IFT max garanti (10mA) |
+| R_G (côté secteur, gâchette) | 330-360Ω, 1W, tenue 350V+ | Valeur standard datasheet pour 230V (180Ω pour 120V, 330-360Ω pour 240V) |
+
+**Nomenclature par canal :** 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W.
 
 ## Sécurité — logique fail-safe du relais
 
