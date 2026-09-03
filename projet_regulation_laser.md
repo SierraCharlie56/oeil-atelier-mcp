@@ -159,6 +159,10 @@ Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regul
 
 ⚠️ **Compiler depuis la copie locale**, pas depuis le NAS : `/home/ch/PlatformIO-local/laser_bain_regulation/`. Le dossier `.pio` (cache de build) corrompt les archives sur ce montage SMB (erreur `file format not recognized` rencontrée le 2026-09-03) — build local confirmé propre (RAM 13,9%, Flash 62,2%).
 
+**Essai matériel du 2026-09-03 (premier flash) :** ✅ validé sur banc de test (réseau/mot de passe provisoires, sondes DS18B20 pas encore reçues).
+- Écran illisible au premier essai (texte dans la zone cassée) — corrigé en reprenant `rotation=2` + `setViewport(0,0,170,200)` de l'ancien projet `esp_lcd_1.9` (au lieu de `rotation=0` sans viewport). Confirmé lisible après reflash.
+- Comportement fail-safe confirmé conforme : sans sonde connectée, écran affiche "Bain: ---", "Laser: ---" et "BLOQUE" en rouge (LED rouge fixe) — le firmware coupe bien tout et garde le relais ouvert en cas de défaut sonde.
+
 **Choix d'architecture :**
 
 - **WebServer synchrone** (bibliothèque standard ESP32), pas d'async — trafic faible, plus simple à maintenir/déboguer pour un système de sécurité.
