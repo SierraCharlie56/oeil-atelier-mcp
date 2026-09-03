@@ -105,6 +105,8 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
 
 Un GPIO ne peut pas piloter une bobine de relais directement (courant insuffisant + pas de protection contre le pic inductif à la coupure). Transistor NPN en commutation basse tension + diode de roue libre.
 
+**Option module tout fait :** un [module relais 1 canal BESTEP / Songle SRD-03VDC-SL-C](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) (en stock) intègre déjà transistor de commande, diode de roue libre et LED d'état — il remplace le circuit discret ci-dessous. Bobine 3V compatible rail 3,3V. Réserves : conso bobine ~120mA (plus que l'hypothèse ~75mA du discret), fail-safe à valider au banc via le cavalier high/low (IN bas/flottant → bobine non alimentée), contact sur COM + NO.
+
 **Rappel logique fail-safe :** GPIO HIGH → transistor conduit → bobine alimentée → contact NO fermé → ligne MYJG autorisée. GPIO LOW/flottant/reset → bobine non alimentée → contact ouvert → laser bloqué par défaut.
 
 ```
@@ -226,6 +228,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 
 - [MOC3023](inventaire_composants.md#moc3023--optocoupleur-sortie-triac-sans-zcd) — driver optocoupleur TRIAC
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
+- [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
 
 ## Compteur d'utilisation découpeuse (usure tube laser)
