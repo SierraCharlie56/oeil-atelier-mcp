@@ -451,7 +451,10 @@ Bobine : bornes 13 (A1) / 14 (A2).
 
 **Usage :** commutation multipôle sous secteur (jusqu'à 4 circuits 230V / 7A simultanés) — distribution, séquençage, report d'état. **Bobine à alimenter en 230V AC** : ne se pilote pas depuis un GPIO ; il faut un étage secteur en amont (contact d'un petit relais 3V/5V, sortie triac type MOC3023 + BTA16, ou contact sec d'automate).
 
-**Pour le [projet régulation bain laser 110W](projet_regulation_laser.md) :** **pas adapté au relais de sécurité MYJG** — ce rôle exige une bobine basse tension pilotée en fail-safe direct depuis un GPIO 3,3V (non alimentée = sécurité active). Mettre du 230V sur la bobine ajoute un étage de puissance et des modes de défaillance sur la chaîne de sécurité. Réservé à d'éventuels besoins de commutation secteur multipôle ailleurs dans le coffret.
+**Pour le [projet régulation bain laser 110W](projet_regulation_laser.md) :**
+
+- **Pas adapté au relais de sécurité MYJG** — ce rôle exige une bobine basse tension pilotée en fail-safe direct depuis un GPIO 3,3V (non alimentée = sécurité active). Mettre du 230V sur la bobine ajoute un étage de puissance et des modes de défaillance sur la chaîne de sécurité.
+- **Usage retenu : isolation 230V pour la détection ON/OFF découpeuse** — bobine alimentée par le 230V « découpeuse en marche », un pôle inverseur en contact sec sur GPIO33 (COM→GND, NO→GPIO33). Voir [Détection ON/OFF découpeuse via relais Finder](projet_regulation_laser.md#détection-onoff-découpeuse-via-relais-finder-isolation-230v) pour le câblage et les réserves (commutation sèche, durcissement de la ligne GPIO33).
 
 ---
 
