@@ -400,4 +400,28 @@
 
 ---
 
+## Module relais 1 canal BESTEP (relais Songle SRD-03VDC-SL-C)
+
+> Identifié au Dino-Lite — 2026-09-03
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Marque module | BESTEP, « 1 Channel Relay module — High/Low level trigger » |
+| Relais | Songle **SRD-03VDC-SL-C** |
+| Tension bobine | **3V DC** |
+| Type de contact | **SPDT** (`SL-C`) — COM / NO / NC sur bornier à vis 3 points |
+| Pouvoir de coupure | 10A 250VAC · 10A 125VAC · 10A 30VDC · 10A 28VDC |
+| Conso bobine | ≈ 0,36W → **~120mA** sous 3V (bobine ~25Ω) |
+| Onboard | transistor de commande, diode de roue libre, LED d'état relais, LED PWR |
+| Sélection déclenchement | cavalier jaune **High / Low level trigger** |
+| Isolation galvanique | probablement absente sur ce modèle 1 canal (pas de séparation JD-VCC / VCC) |
+
+**Connecteur commande (header 3 broches) :** VCC, IN (signal), GND.
+
+**Fail-safe (à valider au banc) :** régler le cavalier pour que IN bas ou flottant → bobine **non** alimentée → contact ouvert. Câbler la charge sur **COM + NO**.
+
+**Usage :** candidat pour le **relais de sécurité MYJG** du [projet régulation bain laser 110W](projet_regulation_laser.md) — bobine 3V compatible rail 3,3V ESP32, remplace le circuit discret transistor + diode de roue libre (le projet autorise « module relais ou transistor »). Réserves : conso bobine ~120mA sur le régulateur 3,3V de la carte (plus que les ~75mA prévus au discret) ; commutation « sèche » d'une boucle interlock bas niveau → oxydation de contact possible à long terme, d'où l'intérêt de câbler le contact NC vers un GPIO libre pour détecter un contact collé.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
