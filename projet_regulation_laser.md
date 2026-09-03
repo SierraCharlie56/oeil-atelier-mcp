@@ -229,7 +229,38 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [MOC3023](inventaire_composants.md#moc3023--optocoupleur-sortie-triac-sans-zcd) — driver optocoupleur TRIAC
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
+- [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée)
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
+
+## Détection ON/OFF découpeuse via relais Finder (isolation 230V)
+
+Décidé le 2026-09-03. L'entrée `PIN_DECOUPEUSE` (GPIO33, `INPUT_PULLUP`) attend un **contact sec vers la masse** : fermé à GND = LOW = découpeuse ON ; ouvert = HIGH = OFF (fail-safe sans composant externe). Plutôt que de câbler en direct un contact de la machine (potentiel inconnu, possible switching de phase), on interpose un [relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) comme **barrière d'isolation galvanique**.
+
+**Câblage :**
+
+```
+   230V AC "découpeuse en marche"          ESP32
+   (// bobine du contacteur machine)
+            │                               GPIO33 ──────┐
+       ┌────┴────┐                                       │ NO (borne 5)
+       │ Bobine  │ Finder A1/A2 (13/14)          ┌───────┴───────┐
+       │ 230V AC │                               │  1 pôle Finder │
+       └────┬────┘                               │  (inverseur)   │
+            │                                    └───────┬───────┘
+   Découpeuse ON  → bobine excitée → NO fermé            │ COM (borne 9)
+   Découpeuse OFF → bobine relâchée → NO ouvert       GND ESP32
+```
+
+- Découpeuse ON → NO fermé → GPIO33 à la masse → **LOW = ON** ✅
+- Découpeuse OFF / hors tension / relais débranché → NO ouvert → GPIO33 tiré à 3,3V par la pull-up interne → **HIGH = OFF** ✅ (fail-safe conservé)
+- **Aucune modification firmware** : la sémantique « contact vers GND » est exactement celle codée pour GPIO33.
+
+**Réserves :**
+
+- **Vérifier la tension de commande de la découpeuse avant de câbler** : la bobine du Finder est en **230V AC**. Si la machine pilote son contacteur en 24V, ce relais ne convient pas. Prendre le 230V en parallèle sur la bobine du contacteur machine, **jamais sur les phases moteur en direct**.
+- **Commutation « sèche »** : le contact 7A AgNi ne verra qu'environ **70 µA** (3,3V / ~45 kΩ de pull-up interne) — régime *dry circuit*, risque d'oxydation / intermittence à long terme. Acceptable pour un compteur d'usure « confort ». Pour fiabiliser : mettre **deux pôles du Finder en parallèle**, ou préférer un [PC817](inventaire_composants.md#pc817--optocoupleur-simple-canal-sortie-transistor) / un relais à contacts dorés.
+- **Ligne GPIO33 dans le coffret** (nœud haute impédance qui côtoie du 230V) : ajouter un **pull-up externe 10 kΩ vers 3,3V** + **100 nF vers GND** au ras de la broche pour éviter les LOW parasites par couplage capacitif — même logique que la correction GPIO34→GPIO33.
+- **Détection de contact collé** (optionnel) : câbler le pôle **NC** du Finder vers un GPIO input-only libre (34/35/36/39) pour repérer un « découpeuse ON permanent » qui fausserait le compteur d'usure (sans incidence sur la sécurité, l'interlock MYJG étant sur une chaîne séparée).
 
 ## Compteur d'utilisation découpeuse (usure tube laser)
 
