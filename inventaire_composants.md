@@ -424,4 +424,35 @@
 
 ---
 
+## Finder 55.34.8.230.0040 — Relais embrochable 4 inverseurs (4RT), bobine 230V AC
+
+> Identifié au Dino-Lite — 2026-09-03
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Finder, série 55 (relais industriel embrochable) |
+| Référence | **55.34.8.230.0040** |
+| Configuration | **4 contacts inverseurs** (4 CO / 4RT) — `.34` = 4 pôles 7A |
+| Tension bobine | **230V AC** (`.8` = bobine AC 50/60Hz), bornes **A1 / A2** |
+| Pouvoir de coupure | **7A / 250V AC** par contact |
+| Indication / test | indicateur mécanique d'état + **bouton test** (bouton carré en façade) ; LED selon variante |
+| Montage | sur support embrochable série 94 (non fourni ici), clip de maintien |
+
+**Repérage des contacts (double numérotation en façade — n° relais / n° borne support) :**
+
+| Pôle | Commun | NO | NC |
+|---|---|---|---|
+| 1 | 9 | 5 | 1 |
+| 2 | 10 | 6 | 2 |
+| 3 | 11 | 7 | 3 |
+| 4 | 12 | 8 | 4 |
+
+Bobine : bornes 13 (A1) / 14 (A2).
+
+**Usage :** commutation multipôle sous secteur (jusqu'à 4 circuits 230V / 7A simultanés) — distribution, séquençage, report d'état. **Bobine à alimenter en 230V AC** : ne se pilote pas depuis un GPIO ; il faut un étage secteur en amont (contact d'un petit relais 3V/5V, sortie triac type MOC3023 + BTA16, ou contact sec d'automate).
+
+**Pour le [projet régulation bain laser 110W](projet_regulation_laser.md) :** **pas adapté au relais de sécurité MYJG** — ce rôle exige une bobine basse tension pilotée en fail-safe direct depuis un GPIO 3,3V (non alimentée = sécurité active). Mettre du 230V sur la bobine ajoute un étage de puissance et des modes de défaillance sur la chaîne de sécurité. Réservé à d'éventuels besoins de commutation secteur multipôle ailleurs dans le coffret.
+
+---
+
 *Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
