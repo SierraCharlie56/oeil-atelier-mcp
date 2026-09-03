@@ -30,7 +30,10 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] **Câblage détaillé MOC3023 → BTA16-600BW** — fait le 2026-09-02, voir schéma et valeurs ci-dessous.
 - [x] **Circuit de commande du relais de sécurité** — fait le 2026-09-02, voir schéma ci-dessous.
 - [ ] Vérifier le courant réel de la bobine du relais (mesure résistance bobine au multimètre) pour ajuster R_B si besoin.
-- [ ] Firmware : logique de régulation + protections + site web sécurisé.
+- [x] **Firmware** — fait le 2026-09-03, compile sans erreur (RAM 13,9%, Flash 62,2%). Voir section ci-dessous.
+- [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
+- [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
+- [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
 
 ## Carte ESP32 identifiée
 
@@ -59,7 +62,7 @@ Carte de dev **ESP32-WROOM-32** (puce CH340) avec écran intégré **ST7789 170�
 | LED Rouge | 26 | |
 | LED Verte | 25 | |
 | Bus 1-Wire (DS18B20 ×2) | 16 | + pull-up 4,7kΩ |
-| Entrée état découpeuse ON/OFF | 34 | input-only, pull-down externe requis |
+| Entrée état découpeuse ON/OFF | 34 | input-only, **pull-up externe** 10kΩ vers 3,3V requis (contact ferme à la masse = ON → lecture LOW) |
 
 Large marge disponible (GPIO 5, 12, 17, 19, 21, 22, 33, 35, 36, 39 libres) — aucune broche de strapping boot mobilisée pour ces signaux, contrairement à l'option ESP8266 envisagée initialement.
 
@@ -149,6 +152,31 @@ Le relais thermique n'est qu'un maillon de la chaîne de sécurité MYJG (en sé
 - **Pas de persistance au reboot** — l'état bypass ne doit jamais être sauvegardé en flash ; à chaque redémarrage de l'ESP32, on repart toujours en mode protégé.
 - **Timeout automatique** — le bypass se désactive tout seul après un délai (ex. 10-15 min), pour ne pas rester actif indéfiniment après la maintenance.
 - **Indicateur visible pendant le bypass** — ex. LED rouge clignotante (motif différent du "défaut" fixe) tant que le bypass est actif, pour ne jamais confondre "sécurité OK" et "sécurité forcée".
+
+## Firmware (2026-09-03)
+
+Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regulation/` (PlatformIO, ESP32-WROOM-32, framework Arduino). Compile sans erreur (RAM 13,9%, Flash 62,2%).
+
+**Choix d'architecture :**
+
+- **WebServer synchrone** (bibliothèque standard ESP32), pas d'async — trafic faible, plus simple à maintenir/déboguer pour un système de sécurité.
+- **Authentification HTTP Basic** sur toutes les routes web — suffisant pour un réseau local de confiance, non exposé à internet.
+- **Identifiants dans `src/secrets.h`** (non versionné, `.gitignore`) — jamais de mot de passe en clair dans le code. Copier `secrets.h.example` et renseigner les vraies valeurs avant de flasher.
+- **Config TFT_eSPI injectée via `platformio.ini`** (`build_flags`) plutôt qu'en éditant les fichiers internes de la bibliothèque — reproductible (contrairement à l'ancienne méthode qui avait fini à la corbeille).
+
+**Logique implémentée :**
+
+- Régulation hystérésis à deux bandes + anti-cycling compresseur (4 min mini entre démarrages, 2 min mini avant arrêt) — voir `updateRegulation()`.
+- Interlock sécurité : relais fermé uniquement si sonde bain valide ET température < `SAFETY_MAX_BATH_TEMP_C` (26°C par défaut) — voir `updateInterlock()`.
+- Bypass maintenance total, jamais persisté en flash (variable RAM uniquement), timeout auto 15 min, LED rouge clignotante distincte pendant l'activation.
+- LED rouge/verte pilotées uniquement par l'état réel de sécurité (jamais par l'écran, endommagé).
+- Site web (`/`, `/bypass/on`, `/bypass/off`) : page auto-rafraîchie (5s), bouton bypass avec confirmation JS explicite.
+- Écran : affichage informatif température/statut uniquement.
+
+**Avant de flasher :**
+
+1. Éditer `src/secrets.h` (SSID/mot de passe WiFi + mot de passe site web).
+2. Calibrer `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` dans `config.h` — l'ordre des sondes sur le bus 1-Wire n'est pas garanti à l'avance, à vérifier en réchauffant une sonde et observant quel index bouge (moniteur série ou écran).
 
 ## Specs compresseur mesurées (2026-09-02)
 
