@@ -62,9 +62,11 @@ Carte de dev **ESP32-WROOM-32** (puce CH340) avec écran intégré **ST7789 170�
 | LED Rouge | 26 | |
 | LED Verte | 25 | |
 | Bus 1-Wire (DS18B20 ×2) | 16 | + pull-up 4,7kΩ |
-| Entrée état découpeuse ON/OFF | 34 | input-only, **pull-up externe** 10kΩ vers 3,3V requis (contact ferme à la masse = ON → lecture LOW) |
+| Entrée état découpeuse ON/OFF | 33 | pull-up **interne** (`INPUT_PULLUP`) — contact ferme à la masse = ON → lecture LOW ; débranché = HIGH = OFF (fail-safe sans composant externe) |
 
-Large marge disponible (GPIO 5, 12, 17, 19, 21, 22, 33, 35, 36, 39 libres) — aucune broche de strapping boot mobilisée pour ces signaux, contrairement à l'option ESP8266 envisagée initialement.
+Large marge disponible (GPIO 5, 12, 17, 19, 21, 22, 34, 35, 36, 39 libres) — aucune broche de strapping boot mobilisée pour ces signaux, contrairement à l'option ESP8266 envisagée initialement.
+
+**Correction 2026-09-03 :** l'entrée découpeuse a été déplacée du GPIO34 vers le **GPIO33**. GPIO34 est input-only et n'a aucune pull-up interne sur l'ESP32 — sans résistance externe câblée, la broche flotte et peut lire n'importe quoi (observé sur le banc de test : "Decoupeuse: ON" sans câble branché, alors que le fail-safe voulu est OFF). Le GPIO33 dispose d'une pull-up interne activable en logiciel (`INPUT_PULLUP`), qui garantit le bon défaut (débranché = HIGH = OFF) sans composant externe.
 
 ## Câblage détaillé MOC3023 → BTA16-600BW (×2 : compresseur + canne chauffante)
 
@@ -225,6 +227,22 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [MOC3023](inventaire_composants.md#moc3023--optocoupleur-sortie-triac-sans-zcd) — driver optocoupleur TRIAC
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
+
+## Compteur d'utilisation découpeuse (usure tube laser)
+
+Ajouté le 2026-09-03, décidé avec le collègue. Objectif : suivre le temps de fonctionnement cumulé du tube laser via l'entrée `PIN_DECOUPEUSE` (GPIO33), pour anticiper son remplacement.
+
+- **Temps cumulé ON** : compté par pas de 2s (résolution du cycle de régulation), persisté en NVS (flash interne, survit aux coupures). Écriture flash économisée : sauvegarde seulement à l'arrêt de la découpeuse, et toutes les 5 min si une session dure longtemps (`DECOUPEUSE_AUTOSAVE_MS`) — pas à chaque cycle de 2s, pour ne pas user la flash.
+- **Bouton RAZ** (site web, authentifié, confirmation JS) : remet le cumul à zéro. **Ne touche pas** l'historique des connexions (utile même après un changement de tube). À utiliser uniquement lors du changement de tube laser.
+- **Historique des 10 dernières connexions** (tampon circulaire en NVS) : horodatage à chaque front OFF→ON de la découpeuse. Nécessite une horloge murale — synchro NTP (`pool.ntp.org` / `time.google.com`, fuseau Europe/Paris avec bascule heure d'été/hiver auto) lancée une fois le WiFi connecté. Si le NTP n'a jamais répondu au moment d'une connexion, l'entrée s'affiche "heure inconnue" plutôt que de planter.
+- Impact mémoire négligeable (10× uint32 + 2 octets ≈ 42 octets en NVS) — testé : compile OK, RAM 14,3%, Flash 64,3%.
+- **Durée par session ajoutée le 2026-09-03** (suite tests réels sur banc, découpeuse câblée sur GPIO33) : chaque entrée de l'historique affiche aussi sa durée, mise à jour en direct pendant que la session est en cours (marquée "(en cours)"), figée en NVS à l'arrêt (front ON→OFF). Bug d'affichage corrigé au passage : `formatDuration()` n'affichait que h/min, arrondissant les tests courts à "0h 00min" — les secondes sont maintenant affichées.
+- **Correction 2026-09-03 (comptage conditionné à la sécurité) :** le comptage (cumul + historique) ne se déclenche désormais que si la découpeuse est ON **et** que la sécurité autorise réellement (`safetyGreen` = LED verte fixe allumée, rouge éteinte — donc hors bypass maintenance aussi). Avant ce correctif, un signal découpeuse ON pendant que la sécurité bloquait (bain en défaut, surchauffe, etc.) aurait compté à tort du temps d'usure alors que le tube ne peut pas physiquement fonctionner dans cet état. `updateInterlock()` doit désormais s'exécuter avant `updateDecoupeuseTimer()` dans `loop()` — ne pas réinverser cet ordre.
+- **Validé sur banc le 2026-09-03** : sans sondes DS18B20 (sécurité bloquée en permanence, fail-safe), la découpeuse ON ne déclenche plus aucune entrée ni cumul — comportement attendu confirmé. RAZ du compteur testé OK. Test du cas "comptage réel pendant sécurité autorisée" impossible tant que les DS18B20 ne sont pas branchées.
+
+**Why:** le tube laser CO2 est un consommable dont la durée de vie s'exprime en heures d'utilisation ; sans compteur, aucun moyen de savoir quand une baisse de puissance est due à l'usure du tube.
+
+**How to apply:** ne pas resynchroniser trop souvent la flash (usure NVS) — le compromis "sauvegarde à l'arrêt + toutes les 5 min en continu" est un choix déjà tranché, à ne pas remplacer par une écriture à chaque cycle de 2s.
 
 ---
 
