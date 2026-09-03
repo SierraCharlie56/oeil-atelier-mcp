@@ -455,4 +455,4 @@ Bobine : bornes 13 (A1) / 14 (A2).
 
 ---
 
-*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp*
+*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp — dernière mise à jour 2026-09-03 (ajout modules relais BESTEP SRD-03VDC-SL-C et Finder 55.34.8.230.0040).*
