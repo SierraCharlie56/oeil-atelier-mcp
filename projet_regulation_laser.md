@@ -155,7 +155,9 @@ Le relais thermique n'est qu'un maillon de la chaîne de sécurité MYJG (en sé
 
 ## Firmware (2026-09-03)
 
-Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regulation/` (PlatformIO, ESP32-WROOM-32, framework Arduino). Compile sans erreur (RAM 13,9%, Flash 62,2%).
+Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regulation/` (PlatformIO, ESP32-WROOM-32, framework Arduino) — copie de sauvegarde/référence.
+
+⚠️ **Compiler depuis la copie locale**, pas depuis le NAS : `/home/ch/PlatformIO-local/laser_bain_regulation/`. Le dossier `.pio` (cache de build) corrompt les archives sur ce montage SMB (erreur `file format not recognized` rencontrée le 2026-09-03) — build local confirmé propre (RAM 13,9%, Flash 62,2%).
 
 **Choix d'architecture :**
 
