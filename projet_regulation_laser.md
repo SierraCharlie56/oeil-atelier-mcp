@@ -34,6 +34,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
 - [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
 - [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
+- [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 
 ## Carte ESP32 identifiée
 
@@ -82,24 +83,28 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
               BTA16 MT2 (pin3 + patte centrale) ───── MOC3023 pin4 (MT2 interne)
                     │                                     │
               BTA16 Gate (pin2) ◄──── R_G ──────────  MOC3023 pin6 (MT1/Gate interne)
-                    │              330-360Ω 1W
+                    │           (voir tableau, par canal)
                     │
               BTA16 MT1 (pin1)
                     │
                     └───────────────────────────────────────► NEUTRE
 
-   ESP32 GPIO (13 ou 14) ──R_LED (180Ω)── MOC3023 pin1 (anode LED)
+   ESP32 GPIO (13 ou 14) ──R_LED (voir tableau)── MOC3023 pin1 (anode LED)
                                             MOC3023 pin2 (cathode) ── GND ESP32
 ```
 
-**Valeurs :**
+**Valeurs différenciées par canal (décidé le 2026-09-05)** — deux jeux distincts plutôt qu'une valeur unique pour les deux :
 
-| Résistance | Valeur | Rôle |
-|---|---|---|
-| R_LED (côté ESP32) | 180Ω, 1/4W | Limite le courant LED du MOC3023 à ~11,7mA sous 3,3V — marge au-dessus du IFT max garanti (10mA) |
-| R_G (côté secteur, gâchette) | 330-360Ω, 1W, tenue 350V+ | Valeur standard datasheet pour 230V (180Ω pour 120V, 330-360Ω pour 240V) |
+| Canal | R_LED (ESP32, 3,3V) | R_G (secteur, gâchette) | Justification |
+|---|---|---|---|
+| Compresseur (GPIO13, charge inductive, ~7A démarrage) | **180Ω, 1/4W** (~11,7mA, marge au-dessus du IFT max garanti 10mA) | **330-360Ω, 1W, tenue 350V+** | Plus de courant de gâchette dispo pour le BTA16 (non logic-level), utile pour un démarrage moteur et près du zéro de la sinusoïde (MOC3023 = déclenchement en phase aléatoire, pas de zero-cross) |
+| Canne chauffante (GPIO14, charge résistive) | **330Ω** en 3,3V (470Ω si un jour piloté en 5V) | **1kΩ, 1W** | Reprise telle quelle du schéma déjà utilisé et validé sur le thermostat de chauffage de l'atelier de l'utilisateur (`Documentation/SchemaTriac.png`, même BTA16-600BW) ; charge résistive = moins critique sur la marge de courant |
 
-**Nomenclature par canal :** 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W.
+**Nomenclature (2 canaux, valeurs différentes) :**
+- Compresseur : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W
+- Canne chauffante : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 330Ω 1/4W, 1× R_G 1kΩ 1W
+
+**À commander :** R_LED 180Ω (compresseur) + R_LED 330Ω (canne) + R_G 330-360Ω 1W (compresseur) + R_G 1kΩ 1W (canne) — ne pas unifier sur une seule valeur pour les deux canaux. Vérifier au banc le démarrage du compresseur une fois câblé (absence de ronflement/hésitation).
 
 ## Circuit de commande du relais de sécurité (bobine 3V)
 
@@ -277,6 +282,75 @@ Ajouté le 2026-09-03, décidé avec le collègue. Objectif : suivre le temps de
 **Why:** le tube laser CO2 est un consommable dont la durée de vie s'exprime en heures d'utilisation ; sans compteur, aucun moyen de savoir quand une baisse de puissance est due à l'usure du tube.
 
 **How to apply:** ne pas resynchroniser trop souvent la flash (usure NVS) — le compromis "sauvegarde à l'arrêt + toutes les 5 min en continu" est un choix déjà tranché, à ne pas remplacer par une écriture à chaque cycle de 2s.
+
+## Extension envisagée — module de supervision de la chaîne de sécurité laser
+
+> Proposé le 2026-09-04. **Statut : étude seulement. Rien n'est câblé, le firmware n'est pas modifié.** En attente de réponses matérielles — la découpeuse laser n'est pas sous la main pour l'instant.
+
+### Idée
+
+Réutiliser l'ESP32 déjà en place (régulation + interlock thermique) pour en faire aussi un **point unique de surveillance de toute la chaîne de sécurité** de la découpeuse : ramener l'état de chaque contact (capot, débit-contact, switch « laser ») dans l'ESP32, l'afficher sur le site web, et pouvoir dire *lequel* est ouvert quand la machine est bloquée.
+
+### État existant sur la machine
+
+La découpeuse a déjà une **chaîne de sécurité câblée en dur** : `SW LASER` + `Flow` (débit-contact) + `SW DOOR` (capot) **en série**, contacts secs, un seul ouvert = tout s'arrête. Cette chaîne tire la ligne de protection du MYJG vers la masse.
+
+### Doc MYJG retrouvée (NAS, 2026-09-04)
+
+- `/mnt/nas-documents/_CH/FabLab/LaserRouge/Materiel/MYJG/Manuel_MYJG_FR.pdf` (+ `.odt` + version anglaise `Manuel_MYJG.pdf`) — dupliquée aussi dans `.../FabLab/temp/2025/MYJG/` et `.../FabLab/Laser/LaserRouge/`.
+- Schéma de câblage main : `/mnt/nas-documents/_CH/FabLab/Laser/LaserRouge/Shema.pdf` (montre la chaîne `SW LASER` + `Flow` + `SW DOOR` sur le bornier de commande ; le bloc 24 V n'alimente que la partie mouvement).
+- Photos borniers : `/mnt/nas-documents/_CH/FabLab/LaserRouge/Images/` (`MYJG.png`, `Bornier.svg`, `Switch.png`…).
+
+**Bornier de commande MYJG** (2ᵉ banque, 6 bornes) : `H  L  P  G  IN  5V`
+
+| Borne | Rôle |
+|---|---|
+| L | *laser signal* — défaut « No Laser signal » ; à tirer vers `G` pour autoriser |
+| P | *water protection* — défaut « No water protection » ; à tirer vers `G` pour autoriser |
+| G | masse de référence de la commande |
+| 5V | 5 V pour signaux numériques |
+| H / IN | connexion actif-haut / entrée décalage PWM-potentiomètre |
+
+### Tension de la ligne de sécurité
+
+**~5 V, référencée à la masse `G` du MYJG, courant très faible** (pull-up interne, quelques mA au plus). **Pas** du 24 V — le bloc 24 V du schéma n'alimente que la partie mouvement (carte BAZYX + driver DM542 + moteur NEMA). Pas du secteur.
+
+⚠️ Les manuels du NAS sont titrés MYJG-**80W**/60W et une photo dit 100W — le brochage `H/L/P/G/IN/5V` est identique sur toute la gamme, l'info tient. **À confirmer au multimètre sur l'unité réelle** : tension `P`–`G` et `L`–`G` contacts ouverts, avant de dimensionner l'isolation.
+
+### Architecture retenue (si le projet se fait)
+
+**La chaîne câblée reste intacte.** L'ESP32 ne fait que **lire** chaque contact ; son relais de sécurité reste **un maillon série de plus**, jamais la seule grille. Un ESP32 planté (relais collé) ne peut alors pas autoriser le tir capot ouvert — la chaîne série physique tient toujours.
+
+Option écartée : ESP32 comme seule grille (imposerait un *readback* obligatoire du relais + watchdog — trop critique pour un tube 110 W).
+
+### Raccordement — NE PAS dériver les contacts direct sur GPIO
+
+5 V sur la masse du MYJG vs 3,3 V sur la masse ESP32 : un contact ouvert enverrait ~5 V sur une broche 3,3 V, et il faudrait bonder les masses à côté d'une alim 28 kV. **Isoler chaque contact** :
+
+1. **Pôle sec libre par appareil** — si le débit-contact (souvent inverseur), le micro-switch capot et le switch laser ont un contact inutilisé : câblage direct vers l'ESP32 en `INPUT_PULLUP`, chaîne MYJG intouchée. Le plus simple — **à vérifier en premier**.
+2. **Sinon : un PC817 par nœud**, alimenté depuis les bornes `5V`/`G` du MYJG (pas en parasitant le maigre pull-up de `P`). LED de l'opto sur un nœud de la chaîne, côté transistor vers un GPIO `INPUT_PULLUP`. Isolation galvanique complète — même logique que le relais Finder utilisé pour la détection découpeuse. ~3-4 PC817 + résistances.
+
+Dans les deux cas, sémantique fail-safe habituelle : contact fermé = LOW = condition OK ; ouvert / fil coupé = HIGH = défaut.
+
+### Budget broches ESP32
+
+Propres en `INPUT_PULLUP` (non strapping, non input-only) : **GPIO 17, 19, 21, 22** → 4 entrées, suffit pour `SW LASER` + `Flow` + `SW DOOR` (+ éventuellement le nœud `P` global). GPIO 5 en réserve seulement (strapping). **GPIO 12 à éviter** (strapping, pull-up interne = HIGH au boot = risque de blocage). GPIO 34/35/36/39 : input-only, pas de pull-up interne.
+
+Filtrage au ras de chaque broche : **10 kΩ vers 3,3 V + 100 nF vers GND** (lignes qui côtoient du 230 V et une alim HT) — même précaution que la correction GPIO33/GPIO34.
+
+### Affichage web (à ajouter)
+
+- État par contact : `Capot : FERMÉ / OUVERT`, `Débit : OK / NUL`, `Switch laser : OK / OUVERT`.
+- Ligne de synthèse : `Autorisation sécurité : OUI / NON — cause : capot ouvert | débit nul | switch laser | surchauffe bain | sonde HS | bypass`.
+- Anti-rebond asymétrique : passage en défaut immédiat, retour en OK seulement après ~1-2 s stables.
+- Bonus : réutiliser le tampon circulaire NVS de la découpeuse pour horodater les N derniers déclenchements sécurité (« pourquoi le laser a coupé »).
+
+### En attente avant d'aller plus loin
+
+- [ ] Mesurer `P`–`G` et `L`–`G` (contacts ouverts) sur le MYJG réel.
+- [ ] Vérifier si capot / débit-contact / switch laser ont un pôle sec libre.
+- [ ] Trancher l'architecture (surveillance seule vs. participation active) — a priori surveillance seule + relais maillon série.
+- [ ] Découpeuse laser pas sous la main pour l'instant.
 
 ---
 
