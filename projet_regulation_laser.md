@@ -15,11 +15,12 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
   - Serpentin 2 : circuit de retour d'eau du tube laser (chauffe le bain, à refroidir)
 - **Canne chauffante** dans le bac, pour compenser en hiver si la température descend sous la consigne.
 - **ESP32-WROOM-32** pilote compresseur ET canne chauffante en tout-ou-rien via optocoupleurs **MOC3023** + triacs **BTA16-600BW** (voir [inventaire_composants.md](inventaire_composants.md)).
+- **Alimentation de l'ESP32** : module secteur AC-DC **Hi-Link HLK-PM01** (230V AC → 5V DC, 3W) dans le coffret — pas de bloc USB externe (voir section dédiée, décidé 2026-09-07).
 - **2× sondes DS18B20** commandées — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
 - **Relais de sécurité** en série sur la ligne de sécurité du MYJG (autorise/bloque le fonctionnement du laser selon l'état du refroidissement).
 - **LED Rouge** (défaut, bloque le relais) et **LED Verte** (OK, autorise le relais) — indicateurs de sécurité physiques, indépendants de l'écran/du site web.
 - **Entrée** lisant l'état du bouton ON/OFF de la découpeuse (contact mis à la masse).
-- **Afficheur température entrée laser** : utilise l'écran intégré de la carte ESP32 (voir ci-dessous) plutôt qu'un module séparé.
+- **Afficheur température entrée laser** : petit écran **OLED SSD1306 0,96" 128×64, I2C** (module séparé — voir ci-dessous, changement du 2026-09-05).
 - **Site web embarqué** (protégé par mot de passe) : lecture des paramètres/E-S en temps réel + bouton de forçage de fermeture du relais.
 
 ## À faire / en attente
@@ -34,26 +35,67 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
 - [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
 - [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
+- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-PM01** (décidé 2026-09-07) — câbler +Vo→5V / -Vo→GND du DevKit, fusible temporisé + condensateur réservoir en entrée de carte, valider la tenue de la tension 5V pendant un pic d'émission WiFi avec le relais fermé (marge de courant serrée, voir section « Alimentation de l'ESP32 »). Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
+- [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Reste : recevoir/câbler l'OLED et flasher pour valider l'affichage sur le matériel réel.
 
 ## Carte ESP32 identifiée
 
-Carte de dev **ESP32-WROOM-32** (puce CH340) avec écran intégré **ST7789 170×320**, dont la moitié est physiquement cassée — viewport logiciel limité à **170×200** (retrouvé dans un ancien projet `esp_lcd_1.9`, config exacte récupérée depuis `User_Setup.h` de TFT_eSPI).
+**Changement matériel décidé le 2026-09-05 :** abandon de la carte à écran ST7789 intégré (endommagé) au profit d'un **ESP32-WROOM-32 DevKit nu** (38 broches, USB micro + puce série intégrée, sans écran) + un petit **écran OLED SSD1306 0,96" 128×64 en I2C** séparé (~2€, très répandu, `Adafruit_SSD1306` + `Adafruit_GFX`). Confirmé sur photo (`~/Images/ESP32-2.jpg`) : **GPIO16 et GPIO17 ne sont pas sortis sur le connecteur de cette carte non plus** — même limitation que la carte précédente (`~/Images/ESP32-LCD.png`), à ne jamais réassumer disponibles sans revérifier.
 
-**Broches déjà fixées par l'écran (ne pas réutiliser) :**
+**Gain de ce changement :** l'écran SPI intégré mobilisait 6 GPIO (32, 23, 18, 15, 2, 4) ; l'OLED I2C n'en utilise que 2 (SDA/SCL) — net +4 broches propres disponibles, ce qui détend nettement le budget de broches pour l'extension supervision MYJG à l'étude (voir section dédiée, mise à jour).
 
-| Fonction écran | GPIO |
+**Broches de l'écran OLED :**
+
+| Fonction OLED | GPIO |
 |---|---|
-| Backlight | 32 |
-| MOSI | 23 |
-| SCLK | 18 |
-| CS | 15 |
-| DC | 2 |
-| RST | 4 |
+| SDA (I2C) | 21 |
+| SCL (I2C) | 22 |
 
-⚠️ L'écran étant endommagé, il sert uniquement d'**affichage informatif** (température courante) — jamais pour une indication de sécurité. Les LED rouge/verte restent seules garantes du statut autorisé/bloqué.
+Adresse I2C standard `0x3C`, résolution 128×64 (`SCREEN_WIDTH`/`SCREEN_HEIGHT` dans `config.h`).
 
-## Plan de brochage ESP32 (hors broches écran)
+⚠️ L'écran reste **purement informatif** (température courante + statut lisible) — jamais utilisé pour une indication de sécurité. Les LED rouge/verte restent seules garantes du statut autorisé/bloqué, y compris avec ce nouvel écran monochrome sans code couleur.
+
+## Alimentation de l'ESP32 (Hi-Link HLK-PM01)
+
+Décidé le 2026-09-07. Installation fixe alimentée en permanence : on alimente l'ESP32 directement depuis le secteur du coffret avec un module AC-DC encapsulé **[Hi-Link HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w)** (100-240V AC → 5V DC, 0,6A, 3W, isolé classe II) — pas de bloc USB externe à perdre ou débrancher, tout dans l'IP54.
+
+**Câblage :**
+
+```
+   Phase 230V ──[ fusible T 250-500mA ]── HLK-PM01  AC
+   Neutre 230V ─────────────────────────── HLK-PM01  AC
+
+   HLK-PM01 +Vo ──┬── broche 5V (VIN) du DevKit ESP32
+                  │                     (→ AMS1117 embarqué fabrique le 3,3V)
+              [ 470-1000µF ] + [ 100nF ]   au ras de la carte
+                  │
+   HLK-PM01 -Vo ──┴── GND du DevKit ESP32
+```
+
+- La masse **-Vo = GND ESP32** est un rail **SELV flottant**, isolé du secteur — cohérent avec la logique d'isolation du projet. Tout ce qui touche au secteur ou à la ligne MYJG passe déjà par un MOC3023 / le relais Finder / un PC817 : **rien ne change** côté interfaces.
+
+**Budget de courant (le point sensible) :**
+
+| Consommateur | Courant | Note |
+|---|---|---|
+| ESP32-WROOM-32 | ~150-250mA moyen, **pics ~500mA** | bursts d'émission WiFi |
+| Bobine relais BESTEP (rail 3,3V) | **~120mA en continu** | dès que la sécurité autorise = état normal de marche |
+| 2 LED rouge/verte | ~10-20mA | |
+| OLED SSD1306 | ~10-20mA | |
+| LED de chaque MOC3023 | ~12mA / canal actif | compresseur et/ou canne |
+
+Crête cumulée possible **proche voire au-delà des 600mA** du module (pic WiFi + relais fermé + un canal MOC actif).
+
+**Conclusion / réserves :**
+
+- Confortable pour l'ESP32 **seul** ; **serré** avec la bobine du relais en continu + les pics WiFi.
+- **Obligatoire** : condensateur réservoir **≥ 470µF (viser 1000µF)** + 100nF céramique au ras de la broche 5V du DevKit — le HLK-PM01 a une boucle de régulation lente et ne suit pas les bursts WiFi.
+- **À valider au banc** : mesurer la tension 5V sous charge pendant l'émission WiFi avec le relais fermé. Si elle plonge sous ~4,7V (brownout ESP32, ou le relais qui décroche), passer à un module **même empreinte plus large** : **HLK-5M05** (5W, 1A) ou **HLK-10M05** (10W, 2A). Système de sécurité près de 30L d'eau → prendre la marge d'emblée est raisonnable.
+- Alternative si le budget reste trop juste : alimenter la bobine du relais 3V depuis une source séparée pour sortir ses ~120mA continus du budget du HLK-PM01.
+- **Ne pas cumuler USB (flash/debug) et HLK-PM01** : couper le secteur du coffret avant de brancher l'USB pour un reflash, pour ne pas faire se rencontrer les deux sources sur le rail 5V.
+
+## Plan de brochage ESP32
 
 | Fonction | GPIO | Note |
 |---|---|---|
@@ -62,10 +104,12 @@ Carte de dev **ESP32-WROOM-32** (puce CH340) avec écran intégré **ST7789 170�
 | Relais sécurité MYJG | 27 | via module relais ou transistor, jamais en direct |
 | LED Rouge | 26 | |
 | LED Verte | 25 | |
-| Bus 1-Wire (DS18B20 ×2) | 16 | + pull-up 4,7kΩ |
+| Bus 1-Wire (DS18B20 ×2) | 19 | + pull-up 4,7kΩ — GPIO16 indisponible sur cette carte, voir plus haut |
 | Entrée état découpeuse ON/OFF | 33 | pull-up **interne** (`INPUT_PULLUP`) — contact ferme à la masse = ON → lecture LOW ; débranché = HIGH = OFF (fail-safe sans composant externe) |
+| Écran OLED SSD1306 — SDA | 21 | I2C, ajouté 2026-09-05 |
+| Écran OLED SSD1306 — SCL | 22 | I2C, ajouté 2026-09-05 |
 
-Large marge disponible (GPIO 5, 12, 17, 19, 21, 22, 34, 35, 36, 39 libres) — aucune broche de strapping boot mobilisée pour ces signaux, contrairement à l'option ESP8266 envisagée initialement.
+**Large marge disponible** (GPIO 4, 18, 23, 32 libres et propres ; + GPIO 5, 12 en réserve strapping ; + GPIO 34, 35, 36, 39 en entrée seule) — élargie par le passage à l'OLED I2C (2 broches) qui libère les 6 broches SPI de l'ancien écran intégré. Aucune broche de strapping boot mobilisée pour les signaux ci-dessus.
 
 **Correction 2026-09-03 :** l'entrée découpeuse a été déplacée du GPIO34 vers le **GPIO33**. GPIO34 est input-only et n'a aucune pull-up interne sur l'ESP32 — sans résistance externe câblée, la broche flotte et peut lire n'importe quoi (observé sur le banc de test : "Decoupeuse: ON" sans câble branché, alors que le fail-safe voulu est OFF). Le GPIO33 dispose d'une pull-up interne activable en logiciel (`INPUT_PULLUP`), qui garantit le bon défaut (débranché = HIGH = OFF) sans composant externe.
 
@@ -177,7 +221,13 @@ Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regul
 - **WebServer synchrone** (bibliothèque standard ESP32), pas d'async — trafic faible, plus simple à maintenir/déboguer pour un système de sécurité.
 - **Authentification HTTP Basic** sur toutes les routes web — suffisant pour un réseau local de confiance, non exposé à internet.
 - **Identifiants dans `src/secrets.h`** (non versionné, `.gitignore`) — jamais de mot de passe en clair dans le code. Copier `secrets.h.example` et renseigner les vraies valeurs avant de flasher.
-- **Config TFT_eSPI injectée via `platformio.ini`** (`build_flags`) plutôt qu'en éditant les fichiers internes de la bibliothèque — reproductible (contrairement à l'ancienne méthode qui avait fini à la corbeille).
+- **Écran OLED SSD1306 via `Adafruit_SSD1306`/`Adafruit_GFX`** (I2C, `Wire.begin(PIN_OLED_SDA, PIN_OLED_SCL)`) — remplace depuis le 2026-09-05 l'ancien écran ST7789 SPI intégré (`TFT_eSPI`) ; simple déclaration en `lib_deps`, plus besoin de `build_flags` dédiés dans `platformio.ini`.
+
+**Schéma EasyEDA Pro vérifié le 2026-09-05** (`~/Images/SCH_Schematic1.png`, projet `Refroidissement_bain_laser`) : vérification faite en lisant directement les données du projet EasyEDA (fichier `.eprj` SQLite, pas juste l'image PNG rendue — le rendu PNG seul était ambigu à cause de croisements de fils sans point de jonction). Résultat : câblage **conforme au firmware sur tous les points critiques** — OLED SDA=GPIO21, SCL=GPIO22, VCC=3V3, GND=masse ; bus 1-Wire=GPIO19 avec pull-up R5 4,7kΩ vers 3V3, les deux DS18B20 en parallèle (VDD/GND/DQ corrects) ; relais sécurité GPIO27→header "Relay BESTEP MYJG" ; canne=GPIO14, compresseur=GPIO13 ; LED verte=GPIO25, rouge=GPIO26 ; valeurs des résistances R1-R4 conformes (1kΩ1W, 330Ω1W, 330Ω1/4W, 180Ω1/4W). Deux broches libres (GPIO18, GPIO23) sorties vers des headers "Signaux Annexes" de réserve — cohérent avec le budget de broches prévu pour l'extension MYJG à l'étude.
+
+⚠️ **Détail cosmétique repéré (sans impact, rien à corriger) :** le symbole EasyEDA "ESP32 Devkit V1.1" utilisé nomme la broche physique n°20 "D1" au lieu de "D4" (erreur de la bibliothèque de symbole, pas de l'utilisateur) — cette broche n'est pas utilisée dans ce schéma donc aucune conséquence, mais à garder en tête si un jour câblée : elle correspond à GPIO4, pas GPIO1.
+
+**Migration écran 2026-09-05 (ESP32 nu + OLED SSD1306 I2C, remplace l'écran ST7789 intégré) :** `platformio.ini` (lib_deps + suppression des `build_flags` TFT_eSPI), `config.h` (ajout `PIN_OLED_SDA`=21, `PIN_OLED_SCL`=22, `OLED_I2C_ADDR`=0x3C, `SCREEN_WIDTH`/`SCREEN_HEIGHT`=128/64) et `main.cpp` (`updateDisplay()` réécrite pour l'API Adafruit_GFX, `setup()` avec `Wire.begin()` + `display.begin()` non bloquant en cas d'échec — l'écran reste informatif, une panne ici ne doit jamais toucher à la sécurité). Recompilé avec succès (RAM 14,4%, Flash 64,5%, quasi identique à avant). Sources locales et copie NAS synchronisées. **Reste à faire :** flasher la carte et vérifier visuellement l'affichage sur l'OLED réel (positionnement du texte jamais testé sur écran physique, seulement en compilation).
 
 **Logique implémentée :**
 
@@ -228,6 +278,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - Coffret IP54+ minimum pour l'électronique de puissance (230V à proximité de 30L d'eau).
 - Aucune connexion secteur non isolée à portée du bac.
 - L'isolation galvanique du MOC3023 protège l'ESP, pas l'utilisateur — précautions physiques indispensables en plus.
+- **Module d'alimentation secteur (Hi-Link HLK-PM01)** : entrée au potentiel réseau — fusible temporisé 250-500mA en série sur la phase au plus près du module, broches AC capotées/inaccessibles, distances d'isolement respectées. La masse -Vo (= GND ESP32) reste un rail SELV flottant, jamais reliée à la terre ni au secteur.
 
 ## Composants utilisés (voir fiches détaillées dans l'inventaire)
 
@@ -235,6 +286,8 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
 - [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée)
+- [Hi-Link HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) — alimentation secteur 230V AC → 5V DC de l'ESP32 (voir section « Alimentation de l'ESP32 »)
+- Écran OLED SSD1306 0,96" 128×64 I2C — ajouté 2026-09-05, remplace l'écran ST7789 intégré endommagé (à ajouter à l'inventaire si besoin)
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
 
 ## Détection ON/OFF découpeuse via relais Finder (isolation 230V)
@@ -334,7 +387,7 @@ Dans les deux cas, sémantique fail-safe habituelle : contact fermé = LOW = con
 
 ### Budget broches ESP32
 
-Propres en `INPUT_PULLUP` (non strapping, non input-only) : **GPIO 17, 19, 21, 22** → 4 entrées, suffit pour `SW LASER` + `Flow` + `SW DOOR` (+ éventuellement le nœud `P` global). GPIO 5 en réserve seulement (strapping). **GPIO 12 à éviter** (strapping, pull-up interne = HIGH au boot = risque de blocage). GPIO 34/35/36/39 : input-only, pas de pull-up interne.
+✅ **Mis à jour 2026-09-05** (passage à l'OLED I2C, voir plus haut) : budget détendu. GPIO16/17 restent indisponibles sur cette carte, GPIO19 est pris par le 1-Wire et GPIO21/22 par l'OLED, mais l'abandon de l'écran SPI intégré libère 4 broches propres supplémentaires. Propres en `INPUT_PULLUP` (non strapping, non input-only) : **GPIO 4, 18, 23, 32** → 4 entrées, suffit pour `SW LASER` + `Flow` + `SW DOOR` + `P` sans avoir besoin des broches input-only. GPIO 34/35/36/39 restent en réserve si besoin (pull-up externe 10kΩ déjà prévu de toute façon). GPIO 5 en réserve seulement (strapping). **GPIO 12 à éviter** (strapping, pull-up interne = HIGH au boot = risque de blocage).
 
 Filtrage au ras de chaque broche : **10 kΩ vers 3,3 V + 100 nF vers GND** (lignes qui côtoient du 230 V et une alim HT) — même précaution que la correction GPIO33/GPIO34.
 
