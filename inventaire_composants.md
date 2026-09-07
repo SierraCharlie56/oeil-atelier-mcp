@@ -458,4 +458,69 @@ Bobine : bornes 13 (A1) / 14 (A2).
 
 ---
 
-*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp — dernière mise à jour 2026-09-03 (ajout modules relais BESTEP SRD-03VDC-SL-C et Finder 55.34.8.230.0040).*
+## Hi-Link HLK-PM01 — Module d'alimentation AC-DC secteur → 5V (3W)
+
+> Identifié au Dino-Lite — 2026-09-07
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Hi-Link |
+| Référence | **HLK-PM01** |
+| Type | Module d'alimentation à découpage isolé, encapsulé (potting) |
+| Entrée | **100-240V AC**, 0,1A, 50-60Hz |
+| Sortie | **5V DC**, 0,6A (**3W** max) |
+| Isolation | ~3000V AC (typique série PM), **classe II** (symbole double carré = double isolation) |
+| Rendement | ~70-75% |
+| Ondulation résiduelle | ~70-80mV crête-à-crête (typique) |
+| Boîtier | module PCB-mount broches traversantes, ~34×20×15mm |
+| Protections | court-circuit et surcharge, reprise automatique |
+| Marquage | CE |
+
+**Brochage (4 broches, 2 par côté) :**
+
+| Broche | Fonction |
+|--------|----------|
+| AC / AC | Entrée secteur (non polarisé) |
+| -Vo | Masse sortie (0V) |
+| +Vo | Sortie +5V |
+
+**Usage :** alimentation directe depuis le secteur 230V de petits circuits (ESP8266/ESP32, module relais, capteurs) sans transformateur ni bloc secteur externe. Attention : borne d'entrée au potentiel du secteur — respecter les distances d'isolement, protéger l'accès aux broches AC, prévoir un fusible/varistance en amont. Sortie 0,6A = suffisant pour un ESP en WiFi avec un condensateur réservoir sur +Vo pour encaisser les pics d'émission.
+
+---
+
+## ESP32-WROOM-32 DevKit nu — carte de développement 38 broches (sans écran)
+
+> Commandé le 2026-09-05 (pas encore reçu/identifié au Dino-Lite)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Module | ESP32-WROOM-32 (double cœur, WiFi 2,4GHz + BLE) |
+| Format carte | DevKit 38 broches, USB micro + puce USB-série intégrée (CP2102/CH340 selon lot) |
+| Boutons | EN (reset) + BOOT |
+| Référence AliExpress | [item/4000120651745.html](https://fr.aliexpress.com/item/4000120651745.html), variante **« ESP-32 1 pièce »** (~4,08€) — ⚠️ ne pas prendre la variante « ESP-32S Pinboard » (0,73€), qui est le module nu sans USB ni puce série |
+
+**⚠️ GPIO16 et GPIO17 non sortis sur le connecteur de cette carte** (confirmé sur photo `~/Images/ESP32-2.jpg`, initialement au format AVIF malgré l'extension .jpg) — même limitation que l'ancienne carte à écran ST7789 intégré (`~/Images/ESP32-LCD.png`). Ne jamais réassumer ces deux broches disponibles sur une carte de ce type sans revérifier une photo à jour du bandeau de pins.
+
+**Usage :** remplace la carte à écran ST7789 intégré (endommagé) dans le [projet régulation bain laser 110W](projet_regulation_laser.md) — écran désormais séparé, voir [OLED SSD1306 0,96" I2C](#oled-ssd1306-096-1286-4-i2c) ci-dessous.
+
+---
+
+## OLED SSD1306 0,96" 128×64 — écran graphique I2C
+
+> Commandé le 2026-09-05 (pas encore reçu/identifié au Dino-Lite)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Contrôleur | SSD1306 |
+| Résolution | 128×64 points, monochrome |
+| Interface | I2C (2 fils : SDA/SCL) — variante 4 broches (VCC, GND, SDA, SCL) |
+| Adresse I2C | `0x3C` (standard pour ce modèle) |
+| Alimentation | 3,3-5V |
+| Bibliothèques | `Adafruit_SSD1306` + `Adafruit_GFX` (Arduino/PlatformIO) |
+| Référence AliExpress | [item/1005006141235306.html](https://fr.aliexpress.com/item/1005006141235306.html), variante **« White 1pcs »** (2,16€) — ⚠️ vérifier variante I2C 4 broches, pas SPI 7 broches |
+
+**Usage :** affichage informatif température bain/retour laser + statut sécurité (texte uniquement, jamais utilisé comme indicateur de sécurité) dans le [projet régulation bain laser 110W](projet_regulation_laser.md), câblé sur GPIO21 (SDA) / GPIO22 (SCL) de l'[ESP32-WROOM-32 DevKit nu](#esp32-wroom-32-devkit-nu--carte-de-développement-38-broches-sans-écran) ci-dessus. Remplace l'écran ST7789 SPI intégré (endommagé) de l'ancienne carte.
+
+---
+
+*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp — dernière mise à jour 2026-09-07 (ajout du module d'alimentation secteur Hi-Link HLK-PM01, identifié au Dino-Lite).*
