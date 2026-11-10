@@ -145,14 +145,16 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
 
 | Canal | R_LED (ESP32, 3,3V) | R_G (secteur, gâchette) | Justification |
 |---|---|---|---|
-| Compresseur (GPIO13, charge inductive, ~7A démarrage) | **180Ω, 1/4W** (~11,7mA, marge au-dessus du IFT max garanti 10mA) | **330-360Ω, 1W, tenue 350V+** | Plus de courant de gâchette dispo pour le BTA16 (non logic-level), utile pour un démarrage moteur et près du zéro de la sinusoïde (MOC3023 = déclenchement en phase aléatoire, pas de zero-cross) |
-| Canne chauffante (GPIO14, charge résistive) | **330Ω** en 3,3V (470Ω si un jour piloté en 5V) | **1kΩ, 1W** | Reprise telle quelle du schéma déjà utilisé et validé sur le thermostat de chauffage de l'atelier de l'utilisateur (`Documentation/SchemaTriac.png`, même BTA16-600BW) ; charge résistive = moins critique sur la marge de courant |
+| Compresseur (GPIO13, charge inductive, ~7A démarrage) | **180Ω, 1/4W** (~11,7mA, ~2× l'IFT max garanti de 5 mA du MOC3023) | **330-360Ω, 1W, tenue 350V+** | Plus de courant de gâchette dispo pour le BTA16 (non logic-level), utile pour un démarrage moteur et près du zéro de la sinusoïde (MOC3023 = déclenchement en phase aléatoire, pas de zero-cross) |
+| Canne chauffante (GPIO14, charge résistive) | **220Ω, 1/4W** en 3,3V (~8,5 mA ; 330Ω si un jour piloté en 5V) — *passé de 330Ω à 220Ω le 2026-11-10, voir note* | **1kΩ, 1W** | Reprise telle quelle du schéma déjà utilisé et validé sur le thermostat de chauffage de l'atelier de l'utilisateur (`Documentation/SchemaTriac.png`, même BTA16-600BW) ; charge résistive = moins critique sur la marge de courant |
+
+**Note 2026-11-10 — R_LED canne 330Ω → 220Ω :** mesuré au banc avec 330Ω : 1,9 V aux bornes de la résistance → **~5,8 mA** dans la LED du MOC3023 (V_F ≈ 1,4 V sous 3,3 V). Fonctionne, mais à peine au-dessus de l'IFT max garanti du MOC3023 (**5 mA** — la valeur 10 mA citée auparavant est celle du MOC3022). Marge insuffisante vu le vieillissement de la LED d'un optocoupleur → 220Ω (~8,5 mA). Le schéma EasyEDA (R3 330Ω 1/4W) est à mettre à jour en conséquence.
 
 **Nomenclature (2 canaux, valeurs différentes) :**
 - Compresseur : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W
-- Canne chauffante : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 330Ω 1/4W, 1× R_G 1kΩ 1W
+- Canne chauffante : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 220Ω 1/4W, 1× R_G 1kΩ 1W
 
-**À commander :** R_LED 180Ω (compresseur) + R_LED 330Ω (canne) + R_G 330-360Ω 1W (compresseur) + R_G 1kΩ 1W (canne) — ne pas unifier sur une seule valeur pour les deux canaux. Vérifier au banc le démarrage du compresseur une fois câblé (absence de ronflement/hésitation).
+**À commander :** R_LED 180Ω (compresseur) + R_LED 220Ω (canne) + R_G 330-360Ω 1W (compresseur) + R_G 1kΩ 1W (canne) — ne pas unifier sur une seule valeur pour les deux canaux. Vérifier au banc le démarrage du compresseur une fois câblé (absence de ronflement/hésitation).
 
 ## Circuit de commande du relais de sécurité (bobine 3V)
 
