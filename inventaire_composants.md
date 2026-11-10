@@ -34,19 +34,22 @@
 | Paramètre | Valeur |
 |-----------|--------|
 | Fabricant | STMicroelectronics |
-| Boîtier | D²PAK (TO-263), isolé, CMS |
+| Boîtier | TO-220AB isolé (traversant, languette percée **non reliée**) |
 | Courant RMS | 16A |
 | Tension de blocage | 600V |
 | Courant de gâchette | 50mA typique |
 | Date fab. | 2023, semaine 05 |
 
-**Brochage (TO-263, 3 broches) :**
+**Brochage (TO-220AB, face marquée vers soi, pattes en bas, de gauche à droite) — vérifié au multimètre le 2026-11-10 :**
 
 | Broche | Fonction |
 |--------|----------|
-| 1 | MT1 (Main Terminal 1) |
-| 2 | Gate (gâchette) |
-| 3 + patte centrale | MT2 |
+| 1 | MT1 / A1 |
+| 2 (milieu) | MT2 / A2 |
+| 3 | Gate (gâchette) |
+| Languette | isolée (reliée à rien) — dissipateur sans isolant possible |
+
+Contrôle ohmmètre : gâchette↔MT1 ≈ 125 Ω dans les deux sens ; MT2 ouvert vers les deux autres ; languette ouverte vers toutes les broches.
 
 **Usage :** commande de charges AC secteur 230V (moteurs, résistances de chauffage, éclairage). Utilisé dans les dimmers et relais statiques AC.
 

@@ -115,6 +115,8 @@ Crête cumulée possible **proche voire au-delà des 600mA** du module (pic WiFi
 
 ## Câblage détaillé MOC3023 → BTA16-600BW (×2 : compresseur + canne chauffante)
 
+**Correction 2026-11-10 :** brochage BTA16 vérifié au multimètre sur la pièce reçue (TO-220AB isolé) : **1 = MT1, 2 (milieu) = MT2, 3 = gâchette, languette isolée**. L'ancienne version de ce schéma (gâchette = broche 2, MT2 = broche 3 + languette) était fausse. Montage MOC3023 remis selon la fiche technique : pin6 → R_G → MT2, pin4 → gâchette.
+
 Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3023 — à respecter physiquement dans le coffret (pas de piste/fil basse tension à proximité du côté secteur).
 
 ```
@@ -124,12 +126,14 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
                                       │
                     ┌─────────────────┴─────────────────┐
                     │                                     │
-              BTA16 MT2 (pin3 + patte centrale) ───── MOC3023 pin4 (MT2 interne)
+              BTA16 MT2 (broche 2, milieu)          R_G (voir tableau, par canal)
                     │                                     │
-              BTA16 Gate (pin2) ◄──── R_G ──────────  MOC3023 pin6 (MT1/Gate interne)
-                    │           (voir tableau, par canal)
+                    │                               MOC3023 pin6
+                    │                               MOC3023 pin4
+                    │                                     │
+              BTA16 Gate (broche 3) ◄─────────────────────┘
                     │
-              BTA16 MT1 (pin1)
+              BTA16 MT1 (broche 1)
                     │
                     └───────────────────────────────────────► NEUTRE
 
