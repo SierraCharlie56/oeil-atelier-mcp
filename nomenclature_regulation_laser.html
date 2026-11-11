@@ -23,6 +23,7 @@
   .cmd { background: #fde2cf; color: #9a4100; }
   .chk { background: #fff3c4; color: #7a5b00; }
   .opt { background: #e7e9ec; color: #4a535c; }
+  .ord { background: #dbe8f8; color: #1f4f8a; }
   .legend { margin: 6px 0 4px; font-size: 8pt; }
   .legend span { margin-right: 10px; }
   .box { border: 1px solid #b8c4ce; border-left: 4px solid #9a4100; padding: 6px 9px; margin-top: 12px; background: #fdf8f4; break-inside: avoid; }
@@ -40,6 +41,7 @@
 
 <div class="legend">
   <span><span class="b ok">En stock</span> reçu ou identifié</span>
+  <span><span class="b ord">Commandé</span> en attente de livraison</span>
   <span><span class="b cmd">À commander</span></span>
   <span><span class="b chk">À vérifier</span> stock ou réception non confirmés</span>
   <span><span class="b opt">Optionnel</span></span>
@@ -51,9 +53,9 @@
 <tbody>
 <tr><td class="q">1</td><td>Carte ESP32</td><td class="ref">ESP32-WROOM-32 DevKit nu, 38 broches, USB</td><td>Cerveau du système. GPIO16/17 non sortis sur cette carte. Firmware flashé le 10/11/2026.</td><td class="st"><span class="b ok">En stock</span></td></tr>
 <tr><td class="q">1</td><td>Écran OLED</td><td class="ref">SSD1306 0,96" 128×64, I2C 4 broches, adr. <code>0x3C</code></td><td>Affichage informatif (GPIO21 SDA / GPIO22 SCL). Vérifié sur la carte le 10/11/2026.</td><td class="st"><span class="b ok">En stock</span></td></tr>
-<tr><td class="q">1</td><td>LED rouge</td><td class="ref">LED 3 ou 5 mm</td><td>Défaut / sécurité bloquée (GPIO26). Clignote en bypass maintenance.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">1</td><td>LED verte</td><td class="ref">LED 3 ou 5 mm</td><td>Sécurité OK, relais autorisé (GPIO25).</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">2</td><td>Résistances LED</td><td class="ref">~150 Ω 1/4 W (≈ 8-10 mA sous 3,3 V)</td><td>Une par LED. <b>Valeur non fixée dans la doc</b> : à ajuster selon la tension directe des LED choisies.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
+<tr><td class="q">1</td><td>LED rouge</td><td class="ref">LED 3 ou 5 mm</td><td>Défaut / sécurité bloquée (GPIO26). Clignote en bypass maintenance.</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">1</td><td>LED verte</td><td class="ref">LED 3 ou 5 mm</td><td>Sécurité OK, relais autorisé (GPIO25).</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">2</td><td>Résistances LED</td><td class="ref">1/4 W, ~150 Ω (≈ 8-10 mA sous 3,3 V)</td><td>Une par LED, valeur adaptée aux LED en stock.</td><td class="st"><span class="b ok">En stock</span></td></tr>
 </tbody>
 </table>
 
@@ -61,8 +63,8 @@
 <table>
 <thead><tr><th>Qté</th><th>Composant</th><th>Référence / valeur</th><th>Rôle / remarque</th><th>État</th></tr></thead>
 <tbody>
-<tr><td class="q">2</td><td>Sondes de température</td><td class="ref">DS18B20, version sonde inox étanche avec câble</td><td>Une dans le bain (régulation), une sur le retour laser (surveillance). Bus 1-Wire commun sur GPIO19.</td><td class="st"><span class="b chk">Commandées</span></td></tr>
-<tr><td class="q">1</td><td>Résistance de pull-up 1-Wire</td><td class="ref">4,7 kΩ 1/4 W</td><td>Entre DQ (GPIO19) et 3,3 V. R5 du schéma EasyEDA.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
+<tr><td class="q">2</td><td>Sondes de température</td><td class="ref">DS18B20, version sonde inox étanche avec câble</td><td>Une dans le bain (régulation), une sur le retour laser (surveillance). Bus 1-Wire commun sur GPIO19. Reçues le 11/11/2026.</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">1</td><td>Résistance de pull-up 1-Wire</td><td class="ref">4,7 kΩ 1/4 W</td><td>Entre DQ (GPIO19) et 3,3 V. R5 du schéma EasyEDA.</td><td class="st"><span class="b ok">En stock</span></td></tr>
 </tbody>
 </table>
 
@@ -72,10 +74,10 @@
 <tbody>
 <tr><td class="q">2</td><td>Optocoupleur à sortie triac</td><td class="ref">MOC3023 (sans passage par zéro)</td><td>Isolation ESP32 / secteur, un par canal (GPIO13 compresseur, GPIO14 canne).</td><td class="st"><span class="b ok">En stock</span></td></tr>
 <tr><td class="q">2</td><td>Triac de puissance</td><td class="ref">BTA16-600BW, TO-220AB isolé (1 = MT1, 2 = MT2, 3 = gâchette)</td><td>16 A / 600 V, snubberless : pas de RC nécessaire. Compresseur mesuré ~7 A au démarrage, 1,4 A en marche. Dissipateur facultatif.</td><td class="st"><span class="b ok">En stock</span></td></tr>
-<tr><td class="q">1</td><td>R_LED compresseur</td><td class="ref">180 Ω 1/4 W</td><td>LED du MOC3023 compresseur (~11,7 mA).</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">1</td><td>R_LED canne</td><td class="ref"><b>220 Ω</b> 1/4 W</td><td>LED du MOC3023 canne (~8,5 mA). Remplace 330 Ω depuis le 10/11/2026.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>R_G compresseur</td><td class="ref">330-360 Ω <b>1 W</b>, tenue ≥ 350 V</td><td>Résistance de gâchette, côté secteur.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">1</td><td>R_G canne</td><td class="ref">1 kΩ <b>1 W</b></td><td>Résistance de gâchette, côté secteur (valeurs reprises du thermostat de l'atelier).</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
+<tr><td class="q">1</td><td>R_LED compresseur</td><td class="ref">180 Ω 1/4 W</td><td>LED du MOC3023 compresseur (~11,7 mA).</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">1</td><td>R_LED canne</td><td class="ref"><b>220 Ω</b> 1/4 W</td><td>LED du MOC3023 canne (~8,5 mA). Remplace 330 Ω depuis le 10/11/2026.</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">1</td><td>R_G compresseur</td><td class="ref"><b>330 Ω 1 W</b></td><td>Résistance de gâchette, côté secteur. 1 W confirmé (tenue en tension secteur).</td><td class="st"><span class="b ok">En stock</span></td></tr>
+<tr><td class="q">1</td><td>R_G canne</td><td class="ref">1 kΩ <b>1 W</b></td><td>Résistance de gâchette, côté secteur (valeurs reprises du thermostat de l'atelier). 1 W confirmé.</td><td class="st"><span class="b ok">En stock</span></td></tr>
 </tbody>
 </table>
 
@@ -93,9 +95,9 @@
 <thead><tr><th>Qté</th><th>Composant</th><th>Référence / valeur</th><th>Rôle / remarque</th><th>État</th></tr></thead>
 <tbody>
 <tr><td class="q">1</td><td>Relais d'isolation 230 V</td><td class="ref">Finder 55.34.8.230.0040 (4 inverseurs, bobine 230 V AC)</td><td>Contact sec COM/NO vers GPIO33. Bobine à brancher en parallèle sur la bobine du contacteur machine : vérifier d'abord que la commande est bien en 230 V.</td><td class="st"><span class="b ok">En stock</span></td></tr>
-<tr><td class="q">1</td><td>Embase pour le relais Finder</td><td class="ref">Embase à vis compatible série 55.34 (ex. Finder 94.04)</td><td>Le relais est embrochable : il lui faut un support.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">1</td><td>Pull-up externe GPIO33</td><td class="ref">10 kΩ 1/4 W</td><td>Durcit la ligne contre les parasites 230 V du coffret.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
-<tr><td class="q">1</td><td>Condensateur de filtrage GPIO33</td><td class="ref">100 nF céramique</td><td>Entre GPIO33 et GND, au ras de la broche.</td><td class="st"><span class="b chk">À vérifier</span></td></tr>
+<tr><td class="q">1</td><td>Embase pour le relais Finder</td><td class="ref">Embase à vis compatible série 55.34 (ex. Finder 94.04)</td><td>Le relais est embrochable : il lui faut un support. Vérifier la compatibilité 55.34 sur la fiche Finder avant d'acheter.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
+<tr><td class="q">1</td><td>Pull-up externe GPIO33</td><td class="ref">10 kΩ 1/4 W</td><td>Durcit la ligne contre les parasites 230 V du coffret.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>Condensateur de filtrage GPIO33</td><td class="ref">100 nF céramique</td><td>Entre GPIO33 et GND, au ras de la broche.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
 </tbody>
 </table>
 
@@ -103,14 +105,14 @@
 <table>
 <thead><tr><th>Qté</th><th>Repère</th><th>Référence / valeur</th><th>Rôle / remarque</th><th>État</th></tr></thead>
 <tbody>
-<tr><td class="q">1</td><td>Module AC-DC</td><td class="ref">Hi-Link <b>HLK-10M05</b> (230 V AC → 5 V DC, 2 A, 10 W)</td><td>Remplace le HLK-PM01 (0,6 A, marge insuffisante). Plus encombrant : prévoir sa place.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>F1, fusible</td><td class="ref">Littelfuse TE5 <code>392 1100 0000</code>, T 1 A 250 V</td><td>Sur la phase, en premier. Acheter du Littelfuse d'origine (Mouser, Farnell, RS).</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>Support de fusible</td><td class="ref">Support TE5, pas de 5,08 mm</td><td>Pour pouvoir changer le fusible sans le dessouder.</td><td class="st"><span class="b opt">Optionnel</span></td></tr>
-<tr><td class="q">1</td><td>RV1, varistance</td><td class="ref">10D471K (Ø 10 mm, 470 V)</td><td>Entre L et N, après le fusible.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>C1</td><td class="ref">100 nF céramique</td><td>Au ras des broches +Vo/-Vo du HLK.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>C2</td><td class="ref">1000 µF 10 V électrolytique, low-ESR, 105 °C</td><td>Réservoir au ras du HLK. Attention à la polarité.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>C3</td><td class="ref">100 nF céramique</td><td>Au pied de VIN/GND de l'ESP32.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
-<tr><td class="q">1</td><td>C4</td><td class="ref">10 µF (céramique X5R/X7R ou électrolytique ≥ 10 V)</td><td>Au pied de VIN/GND de l'ESP32.</td><td class="st"><span class="b cmd">À commander</span></td></tr>
+<tr><td class="q">1</td><td>Module AC-DC</td><td class="ref">Hi-Link <b>HLK-10M05</b> (230 V AC → 5 V DC, 2 A, 10 W)</td><td>Remplace le HLK-PM01 (0,6 A, marge insuffisante). Plus encombrant : prévoir sa place.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>F1, fusible</td><td class="ref">Littelfuse TE5 <code>392 1100 0000</code>, T 1 A 250 V</td><td>Sur la phase, en premier. Acheter du Littelfuse d'origine (Mouser, Farnell, RS).</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>Support de fusible</td><td class="ref">Support TE5, pas de 5,08 mm</td><td>Pour pouvoir changer le fusible sans le dessouder.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>RV1, varistance</td><td class="ref">10D471K (Ø 10 mm, 470 V)</td><td>Entre L et N, après le fusible.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>C1</td><td class="ref">100 nF céramique</td><td>Au ras des broches +Vo/-Vo du HLK.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>C2</td><td class="ref">1000 µF 10 V électrolytique, low-ESR, 105 °C</td><td>Réservoir au ras du HLK. Attention à la polarité.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>C3</td><td class="ref">100 nF céramique</td><td>Au pied de VIN/GND de l'ESP32.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
+<tr><td class="q">1</td><td>C4</td><td class="ref">10 µF (céramique X5R/X7R ou électrolytique ≥ 10 V)</td><td>Au pied de VIN/GND de l'ESP32.</td><td class="st"><span class="b ord">Commandé</span></td></tr>
 </tbody>
 </table>
 
@@ -125,16 +127,15 @@
 </table>
 
 <div class="box">
-<h3>Liste de commande</h3>
+<h3>Reste à commander</h3>
 <ul>
-  <li>1 × Hi-Link HLK-10M05</li>
-  <li>1 × fusible Littelfuse TE5 <code>392 1100 0000</code> (T 1 A 250 V), plus éventuellement un support TE5</li>
-  <li>1 × varistance 10D471K</li>
-  <li>2 × condensateurs 100 nF céramique (C1, C3), plus 1 de plus pour le GPIO33 s'il n'est pas en stock</li>
-  <li>1 × condensateur 1000 µF 10 V low-ESR 105 °C (C2)</li>
-  <li>1 × condensateur 10 µF (C4)</li>
-  <li>1 × résistance 220 Ω 1/4 W (R_LED de la canne)</li>
-  <li>À compléter selon le stock : les résistances et pièces marquées « À vérifier » (180 Ω, 330-360 Ω 1 W, 1 kΩ 1 W, 4,7 kΩ, 10 kΩ, LED et leurs résistances, embase Finder)</li>
+  <li>1 × embase pour le relais Finder 55.34 (ex. Finder 94.04, compatibilité à confirmer)</li>
+</ul>
+<h3 style="margin-top:6px;color:#1f4f8a">En commande (livraison attendue)</h3>
+<ul>
+  <li>Alimentation : 1 × Hi-Link HLK-10M05, 1 × fusible Littelfuse TE5 <code>392 1100 0000</code> (T 1 A 250 V) + support TE5, 1 × varistance 10D471K</li>
+  <li>Filtrage 5 V : 2 × 100 nF céramique (C1, C3), 1 × 1000 µF 10 V low-ESR 105 °C (C2), 1 × 10 µF (C4)</li>
+  <li>Ligne GPIO33 : 1 × résistance 10 kΩ 1/4 W, 1 × condensateur 100 nF</li>
 </ul>
 </div>
 

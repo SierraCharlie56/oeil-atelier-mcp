@@ -16,7 +16,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - **Canne chauffante** dans le bac, pour compenser en hiver si la température descend sous la consigne.
 - **ESP32-WROOM-32** pilote compresseur ET canne chauffante en tout-ou-rien via optocoupleurs **MOC3023** + triacs **BTA16-600BW** (voir [inventaire_composants.md](inventaire_composants.md)).
 - **Alimentation de l'ESP32** : module secteur AC-DC **Hi-Link HLK-10M05** (230V AC → 5V DC, 2A, 10W) dans le coffret, protégé par fusible + varistance, pas de bloc USB externe (voir section dédiée ; décidé 2026-09-07 avec un HLK-PM01, passé au 10M05 le 2026-11-11).
-- **2× sondes DS18B20** commandées — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
+- **2× sondes DS18B20** (reçues le 2026-11-11) — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
 - **Relais de sécurité** en série sur la ligne de sécurité du MYJG (autorise/bloque le fonctionnement du laser selon l'état du refroidissement).
 - **LED Rouge** (défaut, bloque le relais) et **LED Verte** (OK, autorise le relais) — indicateurs de sécurité physiques, indépendants de l'écran/du site web.
 - **Entrée** lisant l'état du bouton ON/OFF de la découpeuse (contact mis à la masse).
@@ -185,7 +185,7 @@ Isolation galvanique basse tension (ESP32) / secteur (230V) assurée par le MOC3
 - Compresseur : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 180Ω 1/4W, 1× R_G 330-360Ω 1W
 - Canne chauffante : 1× MOC3023, 1× BTA16-600BW, 1× R_LED 220Ω 1/4W, 1× R_G 1kΩ 1W
 
-**À commander :** R_LED 180Ω (compresseur) + R_LED 220Ω (canne) + R_G 330-360Ω 1W (compresseur) + R_G 1kΩ 1W (canne) — ne pas unifier sur une seule valeur pour les deux canaux. Vérifier au banc le démarrage du compresseur une fois câblé (absence de ronflement/hésitation).
+**Toutes en stock (2026-11-11) :** R_LED 180Ω 1/4W (compresseur) + R_LED 220Ω 1/4W (canne) + R_G **330Ω 1W** (compresseur) + R_G **1kΩ 1W** (canne). Ne pas unifier sur une seule valeur pour les deux canaux. R_G impérativement en 1W (tenue aux ~325V crête du secteur, une 1/4W standard ne tient en général que 250V). Vérifier au banc le démarrage du compresseur une fois câblé (absence de ronflement/hésitation).
 
 ## Circuit de commande du relais de sécurité (bobine 3V)
 
@@ -322,10 +322,10 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [MOC3023](inventaire_composants.md#moc3023--optocoupleur-sortie-triac-sans-zcd) — driver optocoupleur TRIAC
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
-- [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée)
+- [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée) **Embase (support à vis compatible série 55.34, ex. Finder 94.04) pas en stock : à commander.**
 - [Hi-Link HLK-10M05](inventaire_composants.md#hi-link-hlk-10m05--module-dalimentation-ac-dc-secteur--5v-10w) (à commander, 2026-11-11) : alimentation secteur 230V AC → 5V DC 2A de l'ESP32, avec fusible T 1A + varistance 10D471K en entrée (voir section « Alimentation de l'ESP32 »). Remplace le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) prévu initialement (marge de courant insuffisante).
 - Écran OLED SSD1306 0,96" 128×64 I2C — ajouté 2026-09-05, remplace l'écran ST7789 intégré endommagé (à ajouter à l'inventaire si besoin)
-- DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
+- [DS18B20](inventaire_composants.md#ds18b20--sonde-de-température-numérique-1-wire) (2×) : sondes température 1-Wire, reçues le 2026-11-11
 
 ## Détection ON/OFF découpeuse via relais Finder (isolation 230V)
 
@@ -354,7 +354,7 @@ Décidé le 2026-09-03. L'entrée `PIN_DECOUPEUSE` (GPIO33, `INPUT_PULLUP`) atte
 
 - **Vérifier la tension de commande de la découpeuse avant de câbler** : la bobine du Finder est en **230V AC**. Si la machine pilote son contacteur en 24V, ce relais ne convient pas. Prendre le 230V en parallèle sur la bobine du contacteur machine, **jamais sur les phases moteur en direct**.
 - **Commutation « sèche »** : le contact 7A AgNi ne verra qu'environ **70 µA** (3,3V / ~45 kΩ de pull-up interne) — régime *dry circuit*, risque d'oxydation / intermittence à long terme. Acceptable pour un compteur d'usure « confort ». Pour fiabiliser : mettre **deux pôles du Finder en parallèle**, ou préférer un [PC817](inventaire_composants.md#pc817--optocoupleur-simple-canal-sortie-transistor) / un relais à contacts dorés.
-- **Ligne GPIO33 dans le coffret** (nœud haute impédance qui côtoie du 230V) : ajouter un **pull-up externe 10 kΩ vers 3,3V** + **100 nF vers GND** au ras de la broche pour éviter les LOW parasites par couplage capacitif — même logique que la correction GPIO34→GPIO33.
+- **Ligne GPIO33 dans le coffret** (nœud haute impédance qui côtoie du 230V) : ajouter un **pull-up externe 10 kΩ vers 3,3V** + **100 nF vers GND** au ras de la broche pour éviter les LOW parasites par couplage capacitif — même logique que la correction GPIO34→GPIO33. *10 kΩ et 100 nF commandés le 2026-11-11.*
 - **Détection de contact collé** (optionnel) : câbler le pôle **NC** du Finder vers un GPIO input-only libre (34/35/36/39) pour repérer un « découpeuse ON permanent » qui fausserait le compteur d'usure (sans incidence sur la sécurité, l'interlock MYJG étant sur une chaîne séparée).
 
 ## Compteur d'utilisation découpeuse (usure tube laser)
