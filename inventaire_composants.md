@@ -459,6 +459,8 @@ Bobine : bornes 13 (A1) / 14 (A2).
 - **Pas adapté au relais de sécurité MYJG** — ce rôle exige une bobine basse tension pilotée en fail-safe direct depuis un GPIO 3,3V (non alimentée = sécurité active). Mettre du 230V sur la bobine ajoute un étage de puissance et des modes de défaillance sur la chaîne de sécurité.
 - **Usage retenu : isolation 230V pour la détection ON/OFF découpeuse** — bobine alimentée par le 230V « découpeuse en marche », un pôle inverseur en contact sec sur GPIO33 (COM→GND, NO→GPIO33). Voir [Détection ON/OFF découpeuse via relais Finder](projet_regulation_laser.md#détection-onoff-découpeuse-via-relais-finder-isolation-230v) pour le câblage et les réserves (commutation sèche, durcissement de la ligne GPIO33).
 
+
+**Embase :** relais embrochable, nécessite une embase série 94. Retenue pour le projet laser (2026-11-11) : **Finder 94.04SMA** (bornes à vis, rail DIN 35 mm ou panneau, étrier métallique de maintien inclus). Autres compatibles 55.34 : 94.74 (rail DIN seulement), 94.54 (sans vis, vérifier le code exact).
 ---
 
 ## Hi-Link HLK-PM01 — Module d'alimentation AC-DC secteur → 5V (3W)
