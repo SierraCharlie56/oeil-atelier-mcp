@@ -15,7 +15,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
   - Serpentin 2 : circuit de retour d'eau du tube laser (chauffe le bain, à refroidir)
 - **Canne chauffante** dans le bac, pour compenser en hiver si la température descend sous la consigne.
 - **ESP32-WROOM-32** pilote compresseur ET canne chauffante en tout-ou-rien via optocoupleurs **MOC3023** + triacs **BTA16-600BW** (voir [inventaire_composants.md](inventaire_composants.md)).
-- **Alimentation de l'ESP32** : module secteur AC-DC **Hi-Link HLK-PM01** (230V AC → 5V DC, 3W) dans le coffret — pas de bloc USB externe (voir section dédiée, décidé 2026-09-07).
+- **Alimentation de l'ESP32** : module secteur AC-DC **Hi-Link HLK-10M05** (230V AC → 5V DC, 2A, 10W) dans le coffret, protégé par fusible + varistance, pas de bloc USB externe (voir section dédiée ; décidé 2026-09-07 avec un HLK-PM01, passé au 10M05 le 2026-11-11).
 - **2× sondes DS18B20** commandées — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
 - **Relais de sécurité** en série sur la ligne de sécurité du MYJG (autorise/bloque le fonctionnement du laser selon l'état du refroidissement).
 - **LED Rouge** (défaut, bloque le relais) et **LED Verte** (OK, autorise le relais) — indicateurs de sécurité physiques, indépendants de l'écran/du site web.
@@ -35,7 +35,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
 - [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
 - [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
-- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-PM01** (décidé 2026-09-07) — câbler +Vo→5V / -Vo→GND du DevKit, fusible temporisé + condensateur réservoir en entrée de carte, valider la tenue de la tension 5V pendant un pic d'émission WiFi avec le relais fermé (marge de courant serrée, voir section « Alimentation de l'ESP32 »). Pas encore câblé.
+- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **à commander** : HLK-10M05, fusible T 1A 250V (+ porte-fusible), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Reste : recevoir/câbler l'OLED et flasher pour valider l'affichage sur le matériel réel.
 
@@ -56,44 +56,74 @@ Adresse I2C standard `0x3C`, résolution 128×64 (`SCREEN_WIDTH`/`SCREEN_HEIGHT`
 
 ⚠️ L'écran reste **purement informatif** (température courante + statut lisible) — jamais utilisé pour une indication de sécurité. Les LED rouge/verte restent seules garantes du statut autorisé/bloqué, y compris avec ce nouvel écran monochrome sans code couleur.
 
-## Alimentation de l'ESP32 (Hi-Link HLK-PM01)
+## Alimentation de l'ESP32 (Hi-Link HLK-10M05)
 
-Décidé le 2026-09-07. Installation fixe alimentée en permanence : on alimente l'ESP32 directement depuis le secteur du coffret avec un module AC-DC encapsulé **[Hi-Link HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w)** (100-240V AC → 5V DC, 0,6A, 3W, isolé classe II) — pas de bloc USB externe à perdre ou débrancher, tout dans l'IP54.
+Décidé le 2026-09-07 (HLK-PM01), **passé au HLK-10M05 le 2026-11-11**. Installation fixe alimentée en permanence : on alimente l'ESP32 directement depuis le secteur du coffret avec un module AC-DC encapsulé **Hi-Link HLK-10M05** (100-240V AC → 5V DC, **2A, 10W**, isolé), pas de bloc USB externe à perdre ou débrancher, tout dans l'IP54.
 
-**Câblage :**
+**Pourquoi le 10M05 plutôt que le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) en stock :** avec le PM01 (0,6A), la crête cumulée (pic WiFi + bobine relais en continu + un canal MOC) arrivait au niveau de sa limite (voir budget ci-dessous). Système de sécurité près de 30L d'eau : on prend la marge d'emblée (×3) au lieu de la valider au banc. ⚠️ Le 10M05 est **plus gros** que le PM01 : prévoir sa place dans le coffret.
+
+**Schéma de câblage (mis à jour 2026-11-11) :**
 
 ```
-   Phase 230V ──[ fusible T 250-500mA ]── HLK-PM01  AC
-   Neutre 230V ─────────────────────────── HLK-PM01  AC
-
-   HLK-PM01 +Vo ──┬── broche 5V (VIN) du DevKit ESP32
-                  │                     (→ AMS1117 embarqué fabrique le 3,3V)
-              [ 470-1000µF ] + [ 100nF ]   au ras de la carte
-                  │
-   HLK-PM01 -Vo ──┴── GND du DevKit ESP32
+ ENTRÉE SECTEUR (protection)                       HLK-10M05
+                                                 ┌───────────┐
+ Phase 230V ──[ F1 fusible T 1A 250V ]──┬────────┤ AC (L)    │
+                                        │        │           │
+                                  [ RV1 varistance            │
+                                    10D471K ]    │           │
+                                        │        │           │
+ Neutre 230V ───────────────────────────┴────────┤ AC (N)    │
+                                                 │           │
+                                                 │       +Vo ├──┬──────┬────────── fil court ──────────┬──────┬──── VIN (5V) DevKit ESP32
+                                                 │           │  │      │                               │      │     (→ AMS1117 embarqué : 3,3V)
+                                                 │           │ C1     C2 (+)                          C3     C4 (+)
+                                                 │           │ 100nF  1000µF 10V                      100nF  10µF
+                                                 │           │ céra   électrolytique                  céra   (céra X5R/X7R
+                                                 │           │  │      │ (−)                           │      │  ou électrolytique)
+                                                 │       -Vo ├──┴──────┴──────────────────────────────┴──────┴──── GND DevKit ESP32
+                                                 └───────────┘
+                                                  ◄── au ras du HLK ──►               ◄── au pied de VIN/GND de l'ESP ──►
 ```
 
-- La masse **-Vo = GND ESP32** est un rail **SELV flottant**, isolé du secteur — cohérent avec la logique d'isolation du projet. Tout ce qui touche au secteur ou à la ligne MYJG passe déjà par un MOC3023 / le relais Finder / un PC817 : **rien ne change** côté interfaces.
+**Côté secteur (entrée HLK) :**
 
-**Budget de courant (le point sensible) :**
+- **F1, fusible temporisé T 1A 250V**, en série sur la **phase**, **en premier** (avant la varistance), au plus près du module. Temporisé pour encaisser l'appel de courant à la mise sous tension (charge des condensateurs internes du module).
+- **RV1, varistance 10D471K** (Ø10mm, 470V, soit environ 300V AC en continu), **en parallèle entre L et N, après le fusible**. Elle écrête les surtensions (foudre, commutation du compresseur sur le même réseau). Placée après F1 : si elle claque en court-circuit en fin de vie, c'est le fusible qui saute, pas le disjoncteur de l'atelier.
+- Fusible et varistance sont les protections recommandées par Hi-Link dans le circuit d'application du module.
+
+**Côté 5V : deux groupes de condensateurs, tous en parallèle sur le rail +5V/GND :**
+
+| Repère | Valeur | Emplacement | Rôle |
+|---|---|---|---|
+| C1 | 100nF céramique | au ras des broches +Vo/-Vo du HLK | parasites HF du découpage du module |
+| C2 | **1000µF 10V** électrolytique, **low-ESR, 105°C** | au ras du HLK, à côté de C1 | réservoir : appels de courant (pics WiFi, collage du relais) |
+| C3 | 100nF céramique | **au pied de VIN/GND du DevKit** | découplage HF local de l'ESP32 |
+| C4 | 10µF (céramique X5R/X7R ou électrolytique ≥ 10V) | **au pied de VIN/GND du DevKit**, à côté de C3 | réservoir local : couvre l'inductance du fil HLK → ESP pendant les bursts WiFi (cause classique de resets) |
+
+- **Polarité des électrolytiques** (C2, et C4 s'il est électrolytique) : (+), patte longue, côté +5V ; la bande du boîtier, côté GND.
+- Les 100nF (C1, C3) au **plus près** des broches, boucle la plus petite possible, sinon ils ne servent à rien.
+- 105°C pour C2 : il est collé au module, qui chauffe ; un 85°C vieillirait vite dans le coffret fermé.
+- Si l'ESP est à quelques cm seulement du HLK, C3/C4 restent conseillés (peu coûteux).
+
+- La masse **-Vo = GND ESP32** est un rail **SELV flottant**, isolé du secteur, cohérent avec la logique d'isolation du projet. Tout ce qui touche au secteur ou à la ligne MYJG passe déjà par un MOC3023, le relais Finder ou un PC817 : **rien ne change** côté interfaces.
+
+**Budget de courant :**
 
 | Consommateur | Courant | Note |
 |---|---|---|
 | ESP32-WROOM-32 | ~150-250mA moyen, **pics ~500mA** | bursts d'émission WiFi |
-| Bobine relais BESTEP (rail 3,3V) | **~120mA en continu** | dès que la sécurité autorise = état normal de marche |
+| Bobine relais BESTEP (rail 3,3V) | **~120mA en continu** | dès que la sécurité autorise, donc état normal de marche |
 | 2 LED rouge/verte | ~10-20mA | |
 | OLED SSD1306 | ~10-20mA | |
-| LED de chaque MOC3023 | ~12mA / canal actif | compresseur et/ou canne |
+| LED de chaque MOC3023 | ~6-12mA / canal actif | compresseur et/ou canne |
 
-Crête cumulée possible **proche voire au-delà des 600mA** du module (pic WiFi + relais fermé + un canal MOC actif).
+Crête cumulée de l'ordre de **600-700mA** : à la limite du HLK-PM01 (0,6A), **large marge avec le HLK-10M05 (2A)**.
 
-**Conclusion / réserves :**
+**Réserves :**
 
-- Confortable pour l'ESP32 **seul** ; **serré** avec la bobine du relais en continu + les pics WiFi.
-- **Obligatoire** : condensateur réservoir **≥ 470µF (viser 1000µF)** + 100nF céramique au ras de la broche 5V du DevKit — le HLK-PM01 a une boucle de régulation lente et ne suit pas les bursts WiFi.
-- **À valider au banc** : mesurer la tension 5V sous charge pendant l'émission WiFi avec le relais fermé. Si elle plonge sous ~4,7V (brownout ESP32, ou le relais qui décroche), passer à un module **même empreinte plus large** : **HLK-5M05** (5W, 1A) ou **HLK-10M05** (10W, 2A). Système de sécurité près de 30L d'eau → prendre la marge d'emblée est raisonnable.
-- Alternative si le budget reste trop juste : alimenter la bobine du relais 3V depuis une source séparée pour sortir ses ~120mA continus du budget du HLK-PM01.
-- **Ne pas cumuler USB (flash/debug) et HLK-PM01** : couper le secteur du coffret avant de brancher l'USB pour un reflash, pour ne pas faire se rencontrer les deux sources sur le rail 5V.
+- La marge côté 5V ne règle pas le rail **3,3V** : tout ce qui est sur 3,3V (ESP32 + bobine relais + LED + OLED) passe par l'AMS1117 du DevKit (~1A max, dissipation (5−3,3) × I). Ça reste correct (~0,7W en crête), mais c'est lui le maillon limitant désormais.
+- **À vérifier au banc quand même** : tension VIN pendant l'émission WiFi avec le relais fermé (doit rester > ~4,7V).
+- **Ne pas cumuler USB (flash/debug) et HLK** : couper le secteur du coffret avant de brancher l'USB pour un reflash, pour ne pas faire se rencontrer les deux sources sur le rail 5V.
 
 ## Plan de brochage ESP32
 
@@ -284,7 +314,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - Coffret IP54+ minimum pour l'électronique de puissance (230V à proximité de 30L d'eau).
 - Aucune connexion secteur non isolée à portée du bac.
 - L'isolation galvanique du MOC3023 protège l'ESP, pas l'utilisateur — précautions physiques indispensables en plus.
-- **Module d'alimentation secteur (Hi-Link HLK-PM01)** : entrée au potentiel réseau — fusible temporisé 250-500mA en série sur la phase au plus près du module, broches AC capotées/inaccessibles, distances d'isolement respectées. La masse -Vo (= GND ESP32) reste un rail SELV flottant, jamais reliée à la terre ni au secteur.
+- **Module d'alimentation secteur (Hi-Link HLK-10M05)** : entrée au potentiel réseau : fusible temporisé T 1A en série sur la phase au plus près du module, varistance 10D471K entre L et N en aval du fusible, broches AC capotées/inaccessibles, distances d'isolement respectées. La masse -Vo (= GND ESP32) reste un rail SELV flottant, jamais reliée à la terre ni au secteur.
 
 ## Composants utilisés (voir fiches détaillées dans l'inventaire)
 
@@ -292,7 +322,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
 - [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée)
-- [Hi-Link HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) — alimentation secteur 230V AC → 5V DC de l'ESP32 (voir section « Alimentation de l'ESP32 »)
+- Hi-Link **HLK-10M05** (à commander, 2026-11-11) : alimentation secteur 230V AC → 5V DC 2A de l'ESP32, avec fusible T 1A + varistance 10D471K en entrée (voir section « Alimentation de l'ESP32 »). Remplace le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) prévu initialement (marge de courant insuffisante).
 - Écran OLED SSD1306 0,96" 128×64 I2C — ajouté 2026-09-05, remplace l'écran ST7789 intégré endommagé (à ajouter à l'inventaire si besoin)
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
 
