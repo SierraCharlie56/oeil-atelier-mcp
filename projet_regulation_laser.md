@@ -16,7 +16,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - **Canne chauffante** dans le bac, pour compenser en hiver si la température descend sous la consigne.
 - **ESP32-WROOM-32** pilote compresseur ET canne chauffante en tout-ou-rien via optocoupleurs **MOC3023** + triacs **BTA16-600BW** (voir [inventaire_composants.md](inventaire_composants.md)).
 - **Alimentation de l'ESP32** : module secteur AC-DC **Hi-Link HLK-10M05** (230V AC → 5V DC, 2A, 10W) dans le coffret, protégé par fusible + varistance, pas de bloc USB externe (voir section dédiée ; décidé 2026-09-07 avec un HLK-PM01, passé au 10M05 le 2026-11-11).
-- **2× sondes DS18B20** (reçues le 2026-11-11) — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
+- **2× sondes DS18B20** (reçues, testées sur banc le 2026-11-10) — usage prévu : une dans le bain (régulation), une sur le retour laser (surveillance delta de température / détection anomalie de circulation).
 - **Relais de sécurité** en série sur la ligne de sécurité du MYJG (autorise/bloque le fonctionnement du laser selon l'état du refroidissement).
 - **LED Rouge** (défaut, bloque le relais) et **LED Verte** (OK, autorise le relais) — indicateurs de sécurité physiques, indépendants de l'écran/du site web.
 - **Entrée** lisant l'état du bouton ON/OFF de la découpeuse (contact mis à la masse).
@@ -33,11 +33,12 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Vérifier le courant réel de la bobine du relais (mesure résistance bobine au multimètre) pour ajuster R_B si besoin.
 - [x] **Firmware** — fait le 2026-09-03, compile sans erreur (RAM 13,9%, Flash 62,2%). Voir section ci-dessous.
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
-- [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
-- [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
-- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **à commander** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
+- [x] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser) : **ordre vérifié correct sur banc le 2026-11-10**, `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` de `config.h` inchangés.
+- [x] **Tests basse tension sur banc — validés le 2026-11-10** : ESP32, OLED SSD1306, 2 sondes DS18B20, LED verte et rouge, module relais de sécurité, LED des 2 optocoupleurs MOC3023 (côté commande). Toute la partie basse tension fonctionne.
+- [ ] Câblage et tests de la partie **secteur** : BTA16 + compresseur et canne, alimentation HLK-10M05 (pièces en commande), interlock sur la ligne MYJG réelle, site web en conditions réelles.
+- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
-- [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Reste : recevoir/câbler l'OLED et flasher pour valider l'affichage sur le matériel réel.
+- [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
 
@@ -325,7 +326,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée) **Embase (support à vis compatible série 55.34, ex. Finder 94.04) pas en stock : à commander.**
 - [Hi-Link HLK-10M05](inventaire_composants.md#hi-link-hlk-10m05--module-dalimentation-ac-dc-secteur--5v-10w) (à commander, 2026-11-11) : alimentation secteur 230V AC → 5V DC 2A de l'ESP32, avec fusible T 1A + varistance 10D471K en entrée (voir section « Alimentation de l'ESP32 »). Remplace le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) prévu initialement (marge de courant insuffisante).
 - Écran OLED SSD1306 0,96" 128×64 I2C — ajouté 2026-09-05, remplace l'écran ST7789 intégré endommagé (à ajouter à l'inventaire si besoin)
-- [DS18B20](inventaire_composants.md#ds18b20--sonde-de-température-numérique-1-wire) (2×) : sondes température 1-Wire, reçues le 2026-11-11
+- [DS18B20](inventaire_composants.md#ds18b20--sonde-de-température-numérique-1-wire) (2×) : sondes température 1-Wire, reçues et testées sur banc le 2026-11-10
 
 ## Détection ON/OFF découpeuse via relais Finder (isolation 230V)
 
