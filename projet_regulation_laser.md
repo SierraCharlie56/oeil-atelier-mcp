@@ -35,7 +35,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
 - [ ] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser).
 - [ ] Câblage réel + tests sur le matériel (compresseur, canne, relais, interlock, site web).
-- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **à commander** : HLK-10M05, fusible T 1A 250V (+ porte-fusible), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
+- [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **à commander** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Reste : recevoir/câbler l'OLED et flasher pour valider l'affichage sur le matériel réel.
 
@@ -58,7 +58,7 @@ Adresse I2C standard `0x3C`, résolution 128×64 (`SCREEN_WIDTH`/`SCREEN_HEIGHT`
 
 ## Alimentation de l'ESP32 (Hi-Link HLK-10M05)
 
-Décidé le 2026-09-07 (HLK-PM01), **passé au HLK-10M05 le 2026-11-11**. Installation fixe alimentée en permanence : on alimente l'ESP32 directement depuis le secteur du coffret avec un module AC-DC encapsulé **Hi-Link HLK-10M05** (100-240V AC → 5V DC, **2A, 10W**, isolé), pas de bloc USB externe à perdre ou débrancher, tout dans l'IP54.
+Décidé le 2026-09-07 (HLK-PM01), **passé au HLK-10M05 le 2026-11-11**. Installation fixe alimentée en permanence : on alimente l'ESP32 directement depuis le secteur du coffret avec un module AC-DC encapsulé **[Hi-Link HLK-10M05](inventaire_composants.md#hi-link-hlk-10m05--module-dalimentation-ac-dc-secteur--5v-10w)** (100-240V AC → 5V DC, **2A, 10W**, isolé), pas de bloc USB externe à perdre ou débrancher, tout dans l'IP54.
 
 **Pourquoi le 10M05 plutôt que le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) en stock :** avec le PM01 (0,6A), la crête cumulée (pic WiFi + bobine relais en continu + un canal MOC) arrivait au niveau de sa limite (voir budget ci-dessous). Système de sécurité près de 30L d'eau : on prend la marge d'emblée (×3) au lieu de la valider au banc. ⚠️ Le 10M05 est **plus gros** que le PM01 : prévoir sa place dans le coffret.
 
@@ -88,6 +88,7 @@ Décidé le 2026-09-07 (HLK-PM01), **passé au HLK-10M05 le 2026-11-11**. Instal
 **Côté secteur (entrée HLK) :**
 
 - **F1, fusible temporisé T 1A 250V**, en série sur la **phase**, **en premier** (avant la varistance), au plus près du module. Temporisé pour encaisser l'appel de courant à la mise sous tension (charge des condensateurs internes du module).
+  - **Référence retenue : Littelfuse TE5 série 392, 1,00 A → `392 1100 0000`** (subminiature carré, temporisé, 250V, IEC 60127-3, pas 5,08mm, traversant). Pouvoir de coupure 25A @ 250V AC : adapté derrière le disjoncteur + différentiel 30mA de l'atelier. Déclassement en coffret chaud (~0,7A tenus en continu) très au-dessus des ~0,1A consommés par le HLK. Soudure au fer seulement (350°C ≤ 3 s, pas de refusion), ou sur support TE5 enfichable pour pouvoir le changer. Acheter du Littelfuse d'origine (Mouser/Farnell/RS) : c'est un organe de sécurité secteur, se méfier des copies.
 - **RV1, varistance 10D471K** (Ø10mm, 470V, soit environ 300V AC en continu), **en parallèle entre L et N, après le fusible**. Elle écrête les surtensions (foudre, commutation du compresseur sur le même réseau). Placée après F1 : si elle claque en court-circuit en fin de vie, c'est le fusible qui saute, pas le disjoncteur de l'atelier.
 - Fusible et varistance sont les protections recommandées par Hi-Link dans le circuit d'application du module.
 
@@ -322,7 +323,7 @@ Un compresseur ne supporte pas les cycles marche/arrêt rapprochés (stabilisati
 - [BTA16-600BW](inventaire_composants.md#bta16-600bw--triac-16a--600v) — TRIAC de puissance
 - [Module relais 1 canal BESTEP (Songle SRD-03VDC-SL-C)](inventaire_composants.md#module-relais-1-canal-bestep-relais-songle-srd-03vdc-sl-c) — candidat relais de sécurité MYJG (bobine 3V, SPDT)
 - [Relais Finder 55.34.8.230.0040](inventaire_composants.md#finder-553482300040--relais-embrochable-4-inverseurs-4rt-bobine-230v-ac) — isolation 230V pour la détection ON/OFF découpeuse (voir section dédiée)
-- Hi-Link **HLK-10M05** (à commander, 2026-11-11) : alimentation secteur 230V AC → 5V DC 2A de l'ESP32, avec fusible T 1A + varistance 10D471K en entrée (voir section « Alimentation de l'ESP32 »). Remplace le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) prévu initialement (marge de courant insuffisante).
+- [Hi-Link HLK-10M05](inventaire_composants.md#hi-link-hlk-10m05--module-dalimentation-ac-dc-secteur--5v-10w) (à commander, 2026-11-11) : alimentation secteur 230V AC → 5V DC 2A de l'ESP32, avec fusible T 1A + varistance 10D471K en entrée (voir section « Alimentation de l'ESP32 »). Remplace le [HLK-PM01](inventaire_composants.md#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w) prévu initialement (marge de courant insuffisante).
 - Écran OLED SSD1306 0,96" 128×64 I2C — ajouté 2026-09-05, remplace l'écran ST7789 intégré endommagé (à ajouter à l'inventaire si besoin)
 - DS18B20 (2×) — sondes température 1-Wire, commandées, fiche donnée en conversation (à ajouter à l'inventaire si besoin)
 

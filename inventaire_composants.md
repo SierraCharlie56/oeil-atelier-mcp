@@ -489,6 +489,40 @@ Bobine : bornes 13 (A1) / 14 (A2).
 
 **Usage :** alimentation directe depuis le secteur 230V de petits circuits (ESP8266/ESP32, module relais, capteurs) sans transformateur ni bloc secteur externe. Attention : borne d'entrée au potentiel du secteur — respecter les distances d'isolement, protéger l'accès aux broches AC, prévoir un fusible/varistance en amont. Sortie 0,6A = suffisant pour un ESP en WiFi avec un condensateur réservoir sur +Vo pour encaisser les pics d'émission.
 
+**Projet régulation bain laser :** finalement remplacé par le [HLK-10M05](#hi-link-hlk-10m05--module-dalimentation-ac-dc-secteur--5v-10w) (2026-11-11), marge de courant insuffisante. Le HLK-PM01 reste disponible pour un autre montage.
+
+---
+
+## Hi-Link HLK-10M05 — Module d'alimentation AC-DC secteur → 5V (10W)
+
+> À commander (décidé le 2026-11-11), pas encore reçu ni identifié au Dino-Lite
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Fabricant | Hi-Link |
+| Référence | **HLK-10M05** |
+| Type | Module d'alimentation à découpage isolé, encapsulé (potting) |
+| Entrée | **100-240V AC**, 50-60Hz |
+| Sortie | **5V DC**, **2A** (**10W** max) |
+| Isolation | ~3000V AC (typique série Hi-Link) |
+| Protections | court-circuit et surcharge, reprise automatique |
+| Boîtier | module PCB-mount broches traversantes, **nettement plus gros que le HLK-PM01** |
+
+*Valeurs typiques de la série : rendement, ondulation, dimensions exactes et brochage à confirmer sur la fiche technique et sur la pièce reçue (Dino-Lite).*
+
+**Brochage (à vérifier à réception) :** 2 broches entrée AC (non polarisées), 2 broches sortie **-Vo** (0V) et **+Vo** (+5V).
+
+**Protections et filtrage à prévoir autour du module** (schéma complet dans [projet_regulation_laser.md](projet_regulation_laser.md#alimentation-de-lesp32-hi-link-hlk-10m05)) :
+
+| Côté | Composant | Montage |
+|------|-----------|---------|
+| Entrée | Fusible temporisé **T 1A 250V**, Littelfuse TE5 **`392 1100 0000`** (subminiature, IEC 60127-3, coupure 25A @ 250V AC) | en série sur la phase, en premier |
+| Entrée | Varistance **10D471K** | entre L et N, **en aval** du fusible |
+| Sortie | 100nF céramique + **1000µF 10V** low-ESR 105°C | en parallèle sur +Vo/-Vo, au ras du module |
+| Sortie (charge) | 100nF céramique + 10µF | en parallèle au pied de l'alimentation de la carte alimentée |
+
+**Usage :** alimentation secteur 230V → 5V de l'ESP32 du [projet régulation bain laser 110W](projet_regulation_laser.md). Remplace le [HLK-PM01](#hi-link-hlk-pm01--module-dalimentation-ac-dc-secteur--5v-3w), dont les 0,6A étaient à la limite avec un pic WiFi, la bobine du relais de sécurité en continu et un canal MOC3023 actif (crête ~600-700mA). Attention : bornes d'entrée au potentiel du secteur, broches AC à capoter, distances d'isolement à respecter.
+
 ---
 
 ## ESP32-WROOM-32 DevKit nu — carte de développement 38 broches (sans écran)
@@ -526,4 +560,4 @@ Bobine : bornes 13 (A1) / 14 (A2).
 
 ---
 
-*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp — dernière mise à jour 2026-09-07 (ajout du module d'alimentation secteur Hi-Link HLK-PM01, identifié au Dino-Lite).*
+*Fichier généré avec le microscope USB Dino-Lite via oeil-atelier-mcp — dernière mise à jour 2026-11-11 (ajout du module d'alimentation secteur Hi-Link HLK-10M05, à commander).*
