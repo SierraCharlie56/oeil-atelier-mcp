@@ -414,7 +414,7 @@ Contrôle ohmmètre : gâchette↔MT1 ≈ 125 Ω dans les deux sens ; MT2 ouvert
 | Tension bobine | **3V DC** |
 | Type de contact | **SPDT** (`SL-C`) — COM / NO / NC sur bornier à vis 3 points |
 | Pouvoir de coupure | 10A 250VAC · 10A 125VAC · 10A 30VDC · 10A 28VDC |
-| Conso bobine | ≈ 0,36W → **~120mA** sous 3V (bobine ~25Ω) |
+| Conso bobine | ≈ 0,36W → **~120mA** sous 3V (bobine ~25Ω) d'après la fiche ; **84mA mesurés** le 2026-11-11 sur VCC du module sous 3,3V, relais collé (module complet) |
 | Onboard | transistor de commande, diode de roue libre, LED d'état relais, LED PWR |
 | Sélection déclenchement | cavalier jaune **High / Low level trigger** |
 | Isolation galvanique | probablement absente sur ce modèle 1 canal (pas de séparation JD-VCC / VCC) |

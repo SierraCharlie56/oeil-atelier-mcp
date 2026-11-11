@@ -30,7 +30,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] **Sémantique du bouton "forcer fermeture" du site web** — décidé le 2026-09-02 : **bypass total**. Usage : opérations de maintenance nécessitant la sécurité MYJG fermée (ex. vérifier la continuité de la chaîne de sécurité — porte + autres capots en série avec ce relais — indépendamment de l'état du refroidissement). Voir garde-fous ci-dessous.
 - [x] **Câblage détaillé MOC3023 → BTA16-600BW** — fait le 2026-09-02, voir schéma et valeurs ci-dessous.
 - [x] **Circuit de commande du relais de sécurité** — fait le 2026-09-02, voir schéma ci-dessous.
-- [ ] Vérifier le courant réel de la bobine du relais (mesure résistance bobine au multimètre) pour ajuster R_B si besoin.
+- [x] Vérifier le courant réel de la bobine du relais : **84 mA mesurés le 2026-11-11** (ampèremètre en continu, en série sur VCC du module BESTEP, relais collé, sous 3,3V ; total du module : bobine + LED d'état). Module utilisé : pas de R_B à ajuster.
 - [x] **Firmware** — fait le 2026-09-03, compile sans erreur (RAM 13,9%, Flash 62,2%). Voir section ci-dessous.
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
 - [x] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser) : **ordre vérifié correct sur banc le 2026-11-10**, `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` de `config.h` inchangés.
@@ -114,7 +114,7 @@ Décidé le 2026-09-07 (HLK-PM01), **passé au HLK-10M05 le 2026-11-11**. Instal
 | Consommateur | Courant | Note |
 |---|---|---|
 | ESP32-WROOM-32 | ~150-250mA moyen, **pics ~500mA** | bursts d'émission WiFi |
-| Bobine relais BESTEP (rail 3,3V) | **~120mA en continu** | dès que la sécurité autorise, donc état normal de marche |
+| Bobine relais BESTEP (rail 3,3V) | **84mA mesurés en continu** (2026-11-11 ; ~120mA estimés auparavant) | dès que la sécurité autorise, donc état normal de marche |
 | 2 LED rouge/verte | ~10-20mA | |
 | OLED SSD1306 | ~10-20mA | |
 | LED de chaque MOC3023 | ~6-12mA / canal actif | compresseur et/ou canne |
