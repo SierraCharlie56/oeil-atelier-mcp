@@ -39,6 +39,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 - [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware **flashé le 2026-11-23** (démarre OK, site web affiche la ligne Débit ; ILS pas encore câblé → « NUL », BLOQUE comme attendu). Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
+- [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). Reste : DRC EasyEDA, génération Gerber + perçage, commande (1 oz mini).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
@@ -282,6 +283,59 @@ Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regul
 
 1. Éditer `src/secrets.h` (SSID/mot de passe WiFi + mot de passe site web).
 2. Calibrer `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` dans `config.h` — l'ordre des sondes sur le bus 1-Wire n'est pas garanti à l'avance, à vérifier en réchauffant une sonde et observant quel index bouge (moniteur série ou écran).
+
+## PCB — 3 cartes (vérifiés le 2026-11-23)
+
+Projet EasyEDA Pro `Refroidissement_bain_laser` (`~/Documents/EasyEDA-Pro/projects/`). Vérification faite par lecture directe d'un export `.epro2` (le `.eprj2` « live » garde ses modifications récentes dans un historique chiffré, illisible hors EasyEDA → **toujours exporter un `.epro2`** pour une vérification : il contient un `.epru` texte). Netlist reconstruite par géométrie (schéma) et par pastilles (PCB), puis comparée au firmware. Version validée : export du 2026-11-23 16:38.
+
+### Découpage
+
+| Carte | Contenu | Liaisons |
+|---|---|---|
+| **Automate** | ESP32 DevKit 30 broches sur 2 barrettes femelles 15 broches (rangées à 25,4 mm), module relais BESTEP, connecteurs capteurs | CN1 (6 br.) → alim ; CN4 (6 br.) → affichage |
+| **Alimentation** | HLK-10M05 + fusible + varistance, 2 × MOC3023 + BTA16, borniers secteur | CN1 (6 br.) ← automate |
+| **Affichage** | OLED SSD1306, LED verte/rouge + 150 Ω | U1 (6 br.) ← automate |
+
+**Connecteurs inter-cartes (JST ZR)** — même brochage des deux côtés, **câbles droits obligatoires (broche 1 → broche 1)** ; un câble « inversé » mettrait VIN sur GND :
+- CN1 automate ↔ alim : 1-2 = VIN-ESP32, 3 = D13 (compresseur), 4 = D14 (canne), 5-6 = GND.
+- CN4 automate ↔ affichage : 1 = GND, 2 = 3,3 V, 3 = SCL, 4 = SDA, 5 = D25 (LED verte), 6 = D26 (LED rouge).
+
+### Carte automate — connecteurs
+
+| Connecteur | Brochage | GPIO |
+|---|---|---|
+| CN2, CN3 (DS18B20) | 1 GND, 2 DQ, 3 3,3 V ; pull-up R1 4,7 kΩ | 19 |
+| CN5 (découpeuse) | 1 GND, 2 signal ; R2 10 kΩ + C1 100 nF | 33 |
+| CN7 (débit ILS) | 1 signal, 2 GND ; R3 10 kΩ + C4 100 nF | 18 |
+| CN6 (ligne MYJG) | 1 COM, 2 NO du relais (NC non utilisé) | relais sur 27 |
+| VIN | C3 100 nF + C2 10 µF au pied de l'ESP32 | — |
+
+Module relais alimenté en 3,3 V par le régulateur de l'ESP32 (84 mA mesurés).
+
+### Carte alimentation — valeurs finales par voie
+
+| Voie | Commande | R_LED (MOC) | MOC | R_G (gâchette) | Triac | Bornier |
+|---|---|---|---|---|---|---|
+| **Compresseur** | D13 | **R5 = 180 Ω** 1 W (PR01) | U1 | **R3 = 330 Ω** 3 W (MOR03) | Q1 | **P3 « COMP »** |
+| **Canne** | D14 | **R4 = 220 Ω** 1/4 W (MFR-25FBF52-220R) | U3 | **R2 = 1 kΩ** 3 W (ROX3) | Q2 | **P2 « CHAUF »** |
+
+- Montage MOC : broche 6 directement sur MT2, broche 4 → R_G → gâchette (résistance déplacée côté gâchette par rapport à la fiche technique — même boucle série, électriquement équivalent).
+- HLK-10M05 : +VO → VIN-ESP32, −VO → GND ; C1 100 nF + C2 1000 µF en sortie.
+- Entrée P1 : **L sur P1.2 → fusible T 1 A (U4) → HLK**, varistance 10D471K **après** le fusible (entre la sortie du fusible et N).
+- ⚠️ **Les triacs commutent le neutre** (MT2 sur N, charges entre L et MT1) : une charge à l'arrêt reste reliée à la phase → **couper le secteur avant d'intervenir sur le compresseur ou la canne**, pas seulement la commande. (Avec une prise française, le sens phase/neutre n'est de toute façon pas garanti.)
+- Pas de fusible propre aux charges sur la carte : protection par le disjoncteur amont + différentiel 30 mA.
+
+### Points de fabrication (carte alimentation)
+
+- **Pistes** : puissance 1,35–2,3 mm, gâchettes/côté MOC 0,6 mm, GND/VIN 0,6 mm. Règles de piste par classe de nets (`POWER` 1,0/2,5/5,0 mm, `SECTEUR_SIGNAL`, `BASSE_TENSION`) ; attention, un réglage net par net dans Net Rule l'emporte sur celui de la classe. Le nom de règle « 2oz » n'est qu'un nom : l'épaisseur de cuivre se choisit à la commande (**1 oz suffit**).
+- **BTA16** (pattes mesurées 0,9 × 0,5 mm) : trous **oblongs 1,2 × 0,8 mm**, grand côté dans le sens de l'entraxe ; pastilles 1,8 × 2,0 mm (0,3 mm de cuivre mini, 0,74 mm entre pastilles).
+- **Fente de 4 mm sous les MOC3023** (x 66,5–70,5 mm, y 35–68 mm), ~0,9 mm des pastilles des supports, aucune piste ne la traverse.
+- **Isolement 230 V / BT : 5,82 mm mini** = limite du boîtier MOC3023 (broche 6 ↔ broche 1), rallongé par la fente. La DRC (règle 6 mm entre classes) le signalera : accepté.
+- Pas de dissipateur sur les BTA16 : OK pour le compresseur (1,4 A) ; à prévoir si la canne dépasse ~500 W (languette isolée → dissipateur commun possible).
+
+### Défauts trouvés et corrigés pendant la revue (2026-11-23)
+
+D13/D14 inversés entre les deux CN1 ; sortie HLK inversée (+VO sur GND) ; LED de l'affichage montées à l'envers ; pistes secteur 0,25–0,5 mm ; pastilles BTA16 plus petites que le trou ; varistance avant le fusible ; pistes secteur puis GND passant sous les MOC (isolement 3,15–4,76 mm) ; valeurs du schéma ne correspondant plus à la sérigraphie ; R5 liée à une référence fournisseur 1 Ω ; trous BTA16 trop serrés (1,0 × 0,6 puis 0,9 mm rond).
 
 ## Specs compresseur mesurées (2026-09-02)
 
