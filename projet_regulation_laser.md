@@ -38,7 +38,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Câblage et tests de la partie **secteur** : BTA16 + compresseur et canne, alimentation HLK-10M05 (pièces en commande), interlock sur la ligne MYJG réelle, site web en conditions réelles.
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
-- [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware modifié et compilé, **pas encore flashé ni câblé**. Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, flash, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
+- [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware **flashé le 2026-11-23** (démarre OK, site web affiche la ligne Débit ; ILS pas encore câblé → « NUL », BLOQUE comme attendu). Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
@@ -404,7 +404,7 @@ Décidé le 2026-11-23 : le contacteur est lu par une entrée libre de l'ESP32 (
 - `safe = sonde bain OK && bain ≤ 26 °C && débit OK`. Le **bypass maintenance ignore aussi le débit** (bypass total, textes du site web mis à jour).
 - Régulation thermique (compresseur/canne) **non affectée** par le débit.
 - Affichage : site web `Debit eau laser : OK / stabilisation... / NUL (ou contacteur debranche)` ; OLED ligne du bas `PAS DE DEBIT` ou `Debit: stabilisation` (hors bypass).
-- Compilé le 2026-11-23 (RAM 14,4 %, Flash 64,5 %), **pas encore flashé**.
+- Compilé et **flashé le 2026-11-23** (RAM 14,4 %, Flash 64,5 %). ⚠️ Flash à 460800 bauds (`upload_speed` de `platformio.ini`) en échec ce jour-là (liaison série instable) → flashé avec esptool à 115200.
 
 ### À vérifier sur banc puis en eau
 
