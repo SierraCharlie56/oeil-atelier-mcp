@@ -38,6 +38,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] Câblage et tests de la partie **secteur** : BTA16 + compresseur et canne, alimentation HLK-10M05 (pièces en commande), interlock sur la ligne MYJG réelle, site web en conditions réelles.
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
+- [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware modifié et compilé, **pas encore flashé ni câblé**. Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, flash, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
@@ -138,10 +139,11 @@ Crête cumulée de l'ordre de **600-700mA** : à la limite du HLK-PM01 (0,6A), *
 | LED Verte | 25 | |
 | Bus 1-Wire (DS18B20 ×2) | 19 | + pull-up 4,7kΩ — GPIO16 indisponible sur cette carte, voir plus haut |
 | Entrée état découpeuse ON/OFF | 33 | pull-up **interne** (`INPUT_PULLUP`) — contact ferme à la masse = ON → lecture LOW ; débranché = HIGH = OFF (fail-safe sans composant externe) |
+| Contacteur de débit eau laser (ILS NO) | 18 | `INPUT_PULLUP` + 10 kΩ/100 nF externes — ILS fermé (débit) = LOW = OK ; ouvert / fil coupé = HIGH = BLOQUE. Ajouté 2026-11-23, broche déjà sortie sur le header « Signaux Annexes » du schéma |
 | Écran OLED SSD1306 — SDA | 21 | I2C, ajouté 2026-09-05 |
 | Écran OLED SSD1306 — SCL | 22 | I2C, ajouté 2026-09-05 |
 
-**Large marge disponible** (GPIO 4, 18, 23, 32 libres et propres ; + GPIO 5, 12 en réserve strapping ; + GPIO 34, 35, 36, 39 en entrée seule) — élargie par le passage à l'OLED I2C (2 broches) qui libère les 6 broches SPI de l'ancien écran intégré. Aucune broche de strapping boot mobilisée pour les signaux ci-dessus.
+**Large marge disponible** (GPIO 4, 23, 32 libres — 18 pris par le débit le 2026-11-23 et propres ; + GPIO 5, 12 en réserve strapping ; + GPIO 34, 35, 36, 39 en entrée seule) — élargie par le passage à l'OLED I2C (2 broches) qui libère les 6 broches SPI de l'ancien écran intégré. Aucune broche de strapping boot mobilisée pour les signaux ci-dessus.
 
 **Correction 2026-09-03 :** l'entrée découpeuse a été déplacée du GPIO34 vers le **GPIO33**. GPIO34 est input-only et n'a aucune pull-up interne sur l'ESP32 — sans résistance externe câblée, la broche flotte et peut lire n'importe quoi (observé sur le banc de test : "Decoupeuse: ON" sans câble branché, alors que le fail-safe voulu est OFF). Le GPIO33 dispose d'une pull-up interne activable en logiciel (`INPUT_PULLUP`), qui garantit le bon défaut (débranché = HIGH = OFF) sans composant externe.
 
@@ -374,6 +376,44 @@ Ajouté le 2026-09-03, décidé avec le collègue. Objectif : suivre le temps de
 
 **How to apply:** ne pas resynchroniser trop souvent la flash (usure NVS) — le compromis "sauvegarde à l'arrêt + toutes les 5 min en continu" est un choix déjà tranché, à ne pas remplacer par une écriture à chaque cycle de 2s.
 
+## Contacteur de débit eau laser (GPIO18) — ajouté le 2026-11-23
+
+### Identification (microscope Dino-Lite + ohmmètre, 2026-11-23)
+
+- Étiquette : marque **新达 (Xinda)**, « **水流增压开关** » (interrupteur de débit pour surpresseur), n° `2391279-8` (lot/série). La flèche jaune indique le **sens obligatoire de passage de l'eau**.
+- Démonté côté eau (côté électrique moulé dans la résine) : **palette noire pivotante portant un petit aimant + ressort de rappel inox**. Aucun axe ne traverse de joint : l'aimant agit à travers la paroi sur un ILS moulé → très bonne étanchéité, palette moins sujette au collage par le tartre qu'un piston.
+- Mesures : **2 fils**, **0 Ω palette basculée**, **34,4 MΩ au repos** (= ouvert, limite du calibre) → **ILS nu, sans électronique, normalement ouvert (fermé = débit)**. Sémantique fail-safe correcte : pas de débit, fil coupé ou contacteur débranché = ouvert = BLOQUE.
+
+### Intégration retenue : condition de l'interlock de l'ESP32
+
+Décidé le 2026-11-23 : le contacteur est lu par une entrée libre de l'ESP32 (**GPIO18**) et intégré à la décision AUTORISE/BLOQUE, au même titre que la température du bain — il concerne la circulation de l'eau de refroidissement du laser, donc la régulation.
+
+```
+   GPIO18 (INPUT_PULLUP) ──┬── 10kΩ ──── 3,3V
+                           ├── 100nF ─── GND      (les deux au ras de la broche)
+                           └── ILS ───── GND      (2 fils, polarité indifférente)
+```
+
+- ILS câblé **entre GPIO18 et GND de l'ESP32 uniquement** — il n'est **pas** dans la chaîne MYJG (un même contact ne peut pas servir aux deux circuits sans casser l'isolation). C'est le relais de sécurité (GPIO27) qui transmet le blocage à la ligne `P`/`L`→`G`.
+- Le débit-contact `Flow` d'origine de la machine reste en place dans la chaîne câblée (voir extension ci-dessous) : les deux se cumulent.
+
+### Logique firmware (`PIN_DEBIT`, `FLOW_STABLE_MS` dans `config.h`)
+
+- `readFlow()` + `updateInterlock()` appelés **à chaque tour de `loop()`** (et plus seulement toutes les 2 s) : une perte de débit coupe le relais en quelques ms.
+- **Anti-rebond asymétrique** : coupure **immédiate** à l'ouverture de l'ILS ; ré-autorisation seulement après **5 s de débit continu** (`FLOW_STABLE_MS`) — évite qu'une palette qui papillonne près du seuil fasse claquer le relais.
+- `safe = sonde bain OK && bain ≤ 26 °C && débit OK`. Le **bypass maintenance ignore aussi le débit** (bypass total, textes du site web mis à jour).
+- Régulation thermique (compresseur/canne) **non affectée** par le débit.
+- Affichage : site web `Debit eau laser : OK / stabilisation... / NUL (ou contacteur debranche)` ; OLED ligne du bas `PAS DE DEBIT` ou `Debit: stabilisation` (hors bypass).
+- Compilé le 2026-11-23 (RAM 14,4 %, Flash 64,5 %), **pas encore flashé**.
+
+### À vérifier sur banc puis en eau
+
+- [ ] Banc : ILS débranché → BLOQUE + « PAS DE DEBIT » ; palette basculée → AUTORISE après ~5 s ; relâchée → BLOQUE immédiat.
+- [ ] En eau : contact franc au débit nominal de la pompe, ouverture si on pince le tuyau (seuil fixé par le ressort, palette raccourcissable si besoin).
+- [ ] Papillonnement près du seuil ; ajuster `FLOW_STABLE_MS` si nécessaire.
+- [ ] Respecter le sens de la flèche au montage ; vérifier le retour au repos dans la position d'installation.
+- [ ] Filtre dans le circuit : l'aimant baigné peut piéger des particules métalliques.
+
 ## Extension envisagée — module de supervision de la chaîne de sécurité laser
 
 > Proposé le 2026-09-04. **Statut : étude seulement. Rien n'est câblé, le firmware n'est pas modifié.** En attente de réponses matérielles — la découpeuse laser n'est pas sous la main pour l'instant.
@@ -425,7 +465,7 @@ Dans les deux cas, sémantique fail-safe habituelle : contact fermé = LOW = con
 
 ### Budget broches ESP32
 
-✅ **Mis à jour 2026-09-05** (passage à l'OLED I2C, voir plus haut) : budget détendu. GPIO16/17 restent indisponibles sur cette carte, GPIO19 est pris par le 1-Wire et GPIO21/22 par l'OLED, mais l'abandon de l'écran SPI intégré libère 4 broches propres supplémentaires. Propres en `INPUT_PULLUP` (non strapping, non input-only) : **GPIO 4, 18, 23, 32** → 4 entrées, suffit pour `SW LASER` + `Flow` + `SW DOOR` + `P` sans avoir besoin des broches input-only. GPIO 34/35/36/39 restent en réserve si besoin (pull-up externe 10kΩ déjà prévu de toute façon). GPIO 5 en réserve seulement (strapping). **GPIO 12 à éviter** (strapping, pull-up interne = HIGH au boot = risque de blocage).
+✅ **Mis à jour 2026-09-05** (passage à l'OLED I2C, voir plus haut) : budget détendu. GPIO16/17 restent indisponibles sur cette carte, GPIO19 est pris par le 1-Wire et GPIO21/22 par l'OLED, mais l'abandon de l'écran SPI intégré libère 4 broches propres supplémentaires. Propres en `INPUT_PULLUP` (non strapping, non input-only) : **GPIO 4, 18, 23, 32** → 4 entrées, suffit pour `SW LASER` + `Flow` + `SW DOOR` + `P` sans avoir besoin des broches input-only. ⚠️ **2026-11-23 : GPIO18 pris par le contacteur de débit eau laser** → restent 4, 23, 32 ; une 4ᵉ entrée éventuelle devra prendre une broche input-only (34/35/36/39, pull-up externe obligatoire). GPIO 34/35/36/39 restent en réserve si besoin (pull-up externe 10kΩ déjà prévu de toute façon). GPIO 5 en réserve seulement (strapping). **GPIO 12 à éviter** (strapping, pull-up interne = HIGH au boot = risque de blocage).
 
 Filtrage au ras de chaque broche : **10 kΩ vers 3,3 V + 100 nF vers GND** (lignes qui côtoient du 230 V et une alim HT) — même précaution que la correction GPIO33/GPIO34.
 
