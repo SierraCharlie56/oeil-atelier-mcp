@@ -356,6 +356,15 @@ Les fichiers sont à côté du projet EasyEDA, dans `~/Documents/EasyEDA-Pro/pro
 
 Contrôle de la carte alimentation : contour fermé de 110 × 80 mm ; fente de 4 × 33 mm sous les MOC3023, dessinée dans le contour (donc découpée) ; 6 trous oblongs BTA16 de 0,8 × 1,2 mm dans le perçage des trous métallisés ; vias de 0,3 mm ; trou de fixation de 4,4 mm non métallisé.
 
+Contrôle des cartes automate et affichage (2026-11-24) :
+- **Automate** : contour fermé de 150 × 66 mm ; 4 trous de fixation de Ø4,2 mm à 3,5 mm des coins (cuivre le plus proche à ≥ 2,7 mm) ; 4 trous de module de Ø3,0 mm en rectangle de 19,2 × 44 mm ; 78 trous métallisés de 0,7 à 2,0 mm ; 4 vias.
+- **Affichage** : contour fermé de 74,9 × 39,9 mm ; 4 trous de fixation de Ø4,4 mm (cuivre le plus proche à ≥ 2,7 mm) ; 4 trous de Ø2,3 mm pour l'OLED 0,96" (23,3 × 23,8 mm) ; 18 trous métallisés.
+
+**⚠ Précautions de montage :**
+- **Automate** : les 2 trous de Ø3,0 mm du bas (y = 55 mm) sont à **0,5 mm d'une piste côté soudure**. Une rondelle ou un écrou M3 (Ø5,5 mm environ) appuierait sur le vernis au-dessus de la piste. → Vis ou rondelles **en nylon**, ou entretoise fine côté soudure, ou tête de vis côté composants.
+- **Affichage** : le trou OLED en haut à droite (x = 52,2 mm) est à **0,6 mm d'une piste côté soudure** (un écrou M2 déborde d'environ 0,85 mm). → Écrou ou rondelle **en nylon**.
+- **Affichage** : les 4 trous de Ø4,4 mm ne forment pas un rectangle exact (67,4 × 33,0 mm d'un côté, 66,8 × 31,5 mm de l'autre). → Tracer les perçages du boîtier **à partir de la carte reçue**.
+
 ### Défauts trouvés et corrigés pendant la revue (2026-11-23)
 
 D13/D14 inversés entre les deux CN1 ; sortie HLK inversée (+VO sur GND) ; LED de l'affichage montées à l'envers ; pistes secteur 0,25–0,5 mm ; pastilles BTA16 plus petites que le trou ; varistance avant le fusible ; pistes secteur puis GND passant sous les MOC (isolement 3,15–4,76 mm) ; valeurs du schéma ne correspondant plus à la sérigraphie ; R5 liée à une référence fournisseur 1 Ω ; trous BTA16 trop serrés (1,0 × 0,6 puis 0,9 mm rond).
