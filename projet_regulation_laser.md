@@ -39,7 +39,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 - [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware **flashé le 2026-11-23** (démarre OK, site web affiche la ligne Débit ; ILS pas encore câblé → « NUL », BLOQUE comme attendu). Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
-- [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). Reste : DRC EasyEDA, génération Gerber + perçage, commande (1 oz mini).
+- [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). **DRC EasyEDA validée le 2026-11-24** (4 écarts d'isolement MOC acceptés). Reste : génération Gerber + perçage, commande (1 oz mini).
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
@@ -330,8 +330,24 @@ Module relais alimenté en 3,3 V par le régulateur de l'ESP32 (84 mA mesurés).
 - **Pistes** : puissance 1,35–2,3 mm, gâchettes/côté MOC 0,6 mm, GND/VIN 0,6 mm. Règles de piste par classe de nets (`POWER` 1,0/2,5/5,0 mm, `SECTEUR_SIGNAL`, `BASSE_TENSION`) ; attention, un réglage net par net dans Net Rule l'emporte sur celui de la classe. Le nom de règle « 2oz » n'est qu'un nom : l'épaisseur de cuivre se choisit à la commande (**1 oz suffit**).
 - **BTA16** (pattes mesurées 0,9 × 0,5 mm) : trous **oblongs 1,2 × 0,8 mm**, grand côté dans le sens de l'entraxe ; pastilles 1,8 × 2,0 mm (0,3 mm de cuivre mini, 0,74 mm entre pastilles).
 - **Fente de 4 mm sous les MOC3023** (x 66,5–70,5 mm, y 35–68 mm), ~0,9 mm des pastilles des supports, aucune piste ne la traverse.
-- **Isolement 230 V / BT : 5,82 mm mini** = limite du boîtier MOC3023 (broche 6 ↔ broche 1), rallongé par la fente. La DRC (règle 6 mm entre classes) le signalera : accepté.
+- **Isolement 230 V / BT : 5,82 mm mini** = limite du boîtier MOC3023 (broche 6 ↔ broche 1), rallongé par la fente. La DRC (règle 6 mm entre classes) le signale : accepté (voir « DRC EasyEDA »).
 - Pas de dissipateur sur les BTA16 : OK pour le compresseur (1,4 A) ; à prévoir si la canne dépasse ~500 W (languette isolée → dissipateur commun possible).
+
+### DRC EasyEDA (validée le 2026-11-24)
+
+Règles en place :
+- Règle de piste par classe (voir ci-dessus). **GND et VIN-ESP32 sont dans la classe `Basse_tension`** : les pistes existantes gardent leur largeur de 0,6 mm. Les connecteurs ont 2 fils par signal parce que l'AWG28 seul ne passe pas assez de courant.
+- **Isolement : règle Net-Net `ISOLEMENT_230V` de 6 mm**, uniquement entre les classes `POWER`/`SECTEUR_SIGNAL` et `Basse_tension`. Elle ne doit pas aller dans le tableau Safe Spacing par défaut, sinon elle s'applique partout.
+- **Net Length Tolerance neutralisée** sur `Basse_tension` : la règle par défaut (±25,4 mm) créait de fausses erreurs, et cette vérification ne sert à rien sur cette carte.
+
+Résultat final : **4 erreurs, toutes acceptées** :
+
+| Objets | Distance | Justification |
+|---|---|---|
+| U1_6 ↔ U1_1 et U3_6 ↔ U3_1 (même boîtier) | 5,82 mm | Écart des pattes du MOC3023, impossible à agrandir ; la fente rallonge le chemin en surface. |
+| Pistes e1834 / e1837 (`$1N2026`, broche 6) ↔ U1_1 / U3_1 | 5,905 mm | Moins pénalisant que l'écart interne du boîtier. Option : faire partir la piste tout droit vers le côté secteur sur 1–2 mm avant de tourner. |
+
+Avant de commander, vérifier dans la vue du fabricant : fente de 4 mm bien découpée, trous oblongs des BTA16 métallisés, contours des 3 cartes fermés. Réglages : 1,6 mm, 1 oz, HASL sans plomb.
 
 ### Défauts trouvés et corrigés pendant la revue (2026-11-23)
 
