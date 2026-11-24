@@ -39,7 +39,8 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
 - [ ] **(idée à l'étude — 2026-09-04)** Extension « supervision chaîne de sécurité MYJG » (capot + débit-contact + switch laser ramenés dans l'ESP32). Rien câblé, firmware non modifié — voir section dédiée en fin de fichier. En attente de réponses matérielles (découpeuse laser pas sous la main).
 - [ ] **Contacteur de débit eau laser sur GPIO18** (ajouté le 2026-11-23, voir section dédiée) : firmware **flashé le 2026-11-23** (démarre OK, site web affiche la ligne Débit ; ILS pas encore câblé → « NUL », BLOQUE comme attendu). Reste : pull-up externe 10 kΩ + 100 nF au ras de GPIO18, test sur banc (ILS à la main), puis essai en eau (seuil + papillonnement).
-- [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). **DRC EasyEDA validée le 2026-11-24** (4 écarts d'isolement MOC acceptés). Reste : génération Gerber + perçage, commande (1 oz mini).
+- [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). **DRC EasyEDA validée le 2026-11-24** (4 écarts d'isolement MOC acceptés). **Gerber vérifiés et PCB commandés le 2026-11-24.**
+- [ ] Réception des PCB → montage, test du contacteur de débit sur banc, essais secteur avec lampe en charge.
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
 ## Carte ESP32 identifiée
@@ -348,6 +349,12 @@ Résultat final : **4 erreurs, toutes acceptées** :
 | Pistes e1834 / e1837 (`$1N2026`, broche 6) ↔ U1_1 / U3_1 | 5,905 mm | Moins pénalisant que l'écart interne du boîtier. Option : faire partir la piste tout droit vers le côté secteur sur 1–2 mm avant de tourner. |
 
 Avant de commander, vérifier dans la vue du fabricant : fente de 4 mm bien découpée, trous oblongs des BTA16 métallisés, contours des 3 cartes fermés. Réglages : 1,6 mm, 1 oz, HASL sans plomb.
+
+### Gerber et commande (2026-11-24)
+
+Les fichiers sont à côté du projet EasyEDA, dans `~/Documents/EasyEDA-Pro/projects/` : `Gerber_PCB1_2026-11-24.zip` (automate), `Gerber_PCB-alimentation_2026-11-24.zip`, `Gerber_PCB-affichage_2026-11-24.zip`. Commande passée le 2026-11-24.
+
+Contrôle de la carte alimentation : contour fermé de 110 × 80 mm ; fente de 4 × 33 mm sous les MOC3023, dessinée dans le contour (donc découpée) ; 6 trous oblongs BTA16 de 0,8 × 1,2 mm dans le perçage des trous métallisés ; vias de 0,3 mm ; trou de fixation de 4,4 mm non métallisé.
 
 ### Défauts trouvés et corrigés pendant la revue (2026-11-23)
 
