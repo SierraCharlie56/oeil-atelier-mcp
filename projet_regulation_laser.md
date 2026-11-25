@@ -1,4 +1,4 @@
-# Projet — Régulation température bain refroidissement tube laser 110W
+# Projet — Régulation température bain refroidissement tube laser 150 W crête / 130 W continu
 
 > Démarré 2026-09-02
 
@@ -6,7 +6,7 @@
 
 ## Objectif
 
-Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de retour d'un tube laser CO2 110W, via un **ESP32-WROOM-32**. Le système inclut aussi un **interverrouillage de sécurité** sur la ligne de sécurité du MYJG (alimentation du tube laser) : le laser ne peut fonctionner que si le refroidissement est opérationnel.
+Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de retour d'un tube laser CO2 **150 W crête / 130 W continu** (et non plus 110 W, précisé le 2026-11-25 ; chaleur à évacuer ≈ 550-750 W en continu), via un **ESP32-WROOM-32**. Le système inclut aussi un **interverrouillage de sécurité** sur la ligne de sécurité du MYJG (alimentation du tube laser) : le laser ne peut fonctionner que si le refroidissement est opérationnel.
 
 ## Principe
 
@@ -33,7 +33,12 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] Vérifier le courant réel de la bobine du relais : **84 mA mesurés le 2026-11-11** (ampèremètre en continu, en série sur VCC du module BESTEP, relais collé, sous 3,3V ; total du module : bobine + LED d'état). Module utilisé : pas de R_B à ajuster.
 - [x] **Firmware** — fait le 2026-09-03, compile sans erreur (RAM 13,9%, Flash 62,2%). Voir section ci-dessous.
 - [ ] Éditer `src/secrets.h` avec les vrais identifiants WiFi/site web avant de flasher.
-- [x] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser) : **ordre vérifié correct sur banc le 2026-11-10**, `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` de `config.h` inchangés.
+- [x] Calibrer l'ordre des sondes DS18B20 sur le bus (vérifier physiquement quel index = bain / laser) : **ordre vérifié correct sur banc le 2026-11-10**, `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` de `config.h` inchangés. *(Remplacé le 2026-11-25 par l'adressage ROM, voir ligne suivante.)*
+- [ ] **Firmware revue 2026-11-25 (points 1-3) — compilé, PAS ENCORE FLASHÉ.** Tests au banc à faire (voir section Firmware, « Revue 2026-11-25 ») :
+  - [ ] Point 1 — flasher avec adresses factices (BLOQUÉ, « --- » sur les deux sondes, adresses imprimées sur le série) ; identifier bain/laser en chauffant une sonde à la main ; reporter les adresses ROM dans `config.h` et ci-dessous ; **étiqueter physiquement les câbles** ; reflasher ; débrancher la sonde bain seule → bain « --- », laser correcte, BLOQUÉ, compresseur et canne coupés ; puis la sonde laser seule → BLOQUÉ « SONDE LASER HS ».
+  - [ ] Point 2 — ILS shunté → AUTORISÉ sans cause ; sonde laser > 30 °C → « SURCHAUFFE LASER » (OLED + web), ré-autorisation seulement < 29 °C ; sonde bain > 26 °C → « SURCHAUFFE BAIN », ré-autorisation < 25 °C ; compteur d'usure figé pendant ces blocages. **Valider le seuil `SAFETY_MAX_LASER_TEMP_C` (30 °C) selon l'emplacement réel de la sonde** (sortie tube ou retour vase).
+  - [ ] Point 3 — compiler avec `TEST_WATCHDOG`, mettre en AUTORISÉ avant 90 s → reset en ≤ ~5 s, relais ouvert, LED rouge, web « Dernier redémarrage : WATCHDOG (tache) » ; **vérifier que le module relais BESTEP reste retombé pendant le reset/boot** (GPIO27 haute impédance, cavalier high/low) ; recompiler **sans** `TEST_WATCHDOG` et reflasher.
+- [ ] Hors périmètre de la revue 2026-11-25, à traiter plus tard : `requestTemperatures()` bloquant ~750 ms (débit non relu pendant ce temps → `setWaitForConversion(false)` + lecture différée) ; capteur de niveau bas du vase d'expansion (GPIO 4/23/32, `INPUT_PULLUP` + 10 kΩ / 100 nF) dans l'interlock et coupant la pompe ; mot de passe solide du site web au déploiement (il commande le bypass total).
 - [x] **Tests basse tension sur banc — validés le 2026-11-10** : ESP32, OLED SSD1306, 2 sondes DS18B20, LED verte et rouge, module relais de sécurité, LED des 2 optocoupleurs MOC3023 (côté commande). Toute la partie basse tension fonctionne.
 - [ ] Câblage et tests de la partie **secteur** : BTA16 + compresseur et canne, alimentation HLK-10M05 (pièces en commande), interlock sur la ligne MYJG réelle, site web en conditions réelles.
 - [ ] **Alimentation ESP32 par module secteur Hi-Link HLK-10M05** (décidé 2026-09-07, PM01 → 10M05 le 2026-11-11) : **commandé le 2026-11-11** : HLK-10M05, fusible T 1A 250V Littelfuse TE5 `392 1100 0000` (+ support TE5 éventuel), varistance 10D471K, 2× 100nF céramique, 1000µF 10V low-ESR 105°C, 10µF. Puis câbler selon le schéma de la section « Alimentation de l'ESP32 » et vérifier VIN > 4,7V pendant un pic WiFi avec le relais fermé. Pas encore câblé.
@@ -271,10 +276,17 @@ Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regul
 
 **Migration écran 2026-09-05 (ESP32 nu + OLED SSD1306 I2C, remplace l'écran ST7789 intégré) :** `platformio.ini` (lib_deps + suppression des `build_flags` TFT_eSPI), `config.h` (ajout `PIN_OLED_SDA`=21, `PIN_OLED_SCL`=22, `OLED_I2C_ADDR`=0x3C, `SCREEN_WIDTH`/`SCREEN_HEIGHT`=128/64) et `main.cpp` (`updateDisplay()` réécrite pour l'API Adafruit_GFX, `setup()` avec `Wire.begin()` + `display.begin()` non bloquant en cas d'échec — l'écran reste informatif, une panne ici ne doit jamais toucher à la sécurité). Recompilé avec succès (RAM 14,4%, Flash 64,5%, quasi identique à avant). Sources locales et copie NAS synchronisées. **Reste à faire :** flasher la carte et vérifier visuellement l'affichage sur l'OLED réel (positionnement du texte jamais testé sur écran physique, seulement en compilation).
 
+**Revue 2026-11-25 (claude.ai, voir [revue_firmware_2026-11-25.md](revue_firmware_2026-11-25.md)) — points 1, 2 et 3 implémentés, compilés le 2026-11-25 (RAM 14,4 %, Flash 64,6 %), copie NAS synchronisée. Non flashé, tests au banc à faire (voir « À faire »).**
+
+- **Point 1 — sondes adressées par ROM** (critique). `getTempCByIndex()` refait une recherche sur le bus à chaque appel : si la sonde bain se débranchait, l'index 0 désignait la sonde laser → régulation et interlock sur la mauvaise sonde, sans aucun défaut détecté. Remplacé par `ADDR_SONDE_BAIN` / `ADDR_SONDE_LASER` (8 octets) dans `config.h` + `readProbe()` (NaN si absente, CRC faux, ou hors plage `PROBE_MIN_VALID_C`..`PROBE_MAX_VALID_C` = -10..80 °C, ce qui exclut le 85,0 °C de reset). Adresses actuelles = **factices** → les deux sondes sont lues absentes → BLOQUÉ (fail-safe) tant qu'elles ne sont pas relevées. `printSensorAddresses()` imprime au boot les adresses présentes sur le bus et indique si les sondes configurées sont PRÉSENTES/ABSENTES.
+  - Adresses ROM relevées : *(à compléter au banc)* — bain : `…` ; laser : `…`.
+- **Point 2 — sonde laser dans l'interlock + hystérésis + cause.** Nouveau seuil `SAFETY_MAX_LASER_TEMP_C` = 30 °C (à valider au banc) ; hystérésis `SAFETY_TEMP_HYST_C` = 1 °C sur les deux seuils (blocage au-dessus du seuil, ré-autorisation sous seuil − 1 °C : plus de claquement du relais autour de 26,0 °C). Sonde laser HS = BLOQUÉ. Variable `blockReason` (priorité : SONDE BAIN HS > SONDE LASER HS > SURCHAUFFE BAIN > SURCHAUFFE LASER > PAS DE DEBIT > DEBIT: STABILISATION) affichée sur la dernière ligne de l'OLED et sur le web (« Cause : … »). Texte de confirmation du bypass mis à jour. Compteur d'usure inchangé (dépend toujours de `safetyGreen`).
+- **Point 3 — watchdog sur `loop()`** (critique). Avant : si `loop()` se figeait relais fermé, GPIO27 restait HIGH indéfiniment, laser autorisé sans surveillance. Maintenant `enableLoopWDT()` en fin de `setup()` (après le WiFi bloquant ≤ 15 s). **Vérifié dans le core utilisé** (framework-arduinoespressif32 3.20017 = core 2.0.17) : `CONFIG_ESP_TASK_WDT_TIMEOUT_S=5` et `CONFIG_ESP_TASK_WDT_PANIC=y` → un `loop()` bloqué > 5 s provoque bien un **reset** (pas seulement un message). Pire tour de `loop()` normal ≈ 0,8 s. Cause du dernier redémarrage (`esp_reset_reason()`) imprimée sur le série et affichée sur le web, en rouge si watchdog/panic/brownout. Option de test `TEST_WATCHDOG` (commentée dans `config.h`, **ne jamais laisser active**) : fige `loop()` 90 s après le boot. Effet accepté : un reset watchdog perd au plus 5 min de cumul du compteur d'usure.
+
 **Logique implémentée :**
 
 - Régulation hystérésis à deux bandes + anti-cycling compresseur (4 min mini entre démarrages, 2 min mini avant arrêt) — voir `updateRegulation()`.
-- Interlock sécurité : relais fermé uniquement si sonde bain valide ET température < `SAFETY_MAX_BATH_TEMP_C` (26°C par défaut) — voir `updateInterlock()`.
+- Interlock sécurité : relais fermé uniquement si sonde bain valide ET température < `SAFETY_MAX_BATH_TEMP_C` (26°C par défaut) — voir `updateInterlock()`. *Depuis le 2026-11-25 : + sonde laser valide et < `SAFETY_MAX_LASER_TEMP_C` (30 °C), hystérésis 1 °C, débit OK (2026-11-23).*
 - Bypass maintenance total, jamais persisté en flash (variable RAM uniquement), timeout auto 15 min, LED rouge clignotante distincte pendant l'activation.
 - LED rouge/verte pilotées uniquement par l'état réel de sécurité (jamais par l'écran, endommagé).
 - Site web (`/`, `/bypass/on`, `/bypass/off`) : page auto-rafraîchie (5s), bouton bypass avec confirmation JS explicite.
@@ -283,7 +295,7 @@ Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regul
 **Avant de flasher :**
 
 1. Éditer `src/secrets.h` (SSID/mot de passe WiFi + mot de passe site web).
-2. Calibrer `IDX_SONDE_BAIN`/`IDX_SONDE_LASER` dans `config.h` — l'ordre des sondes sur le bus 1-Wire n'est pas garanti à l'avance, à vérifier en réchauffant une sonde et observant quel index bouge (moniteur série ou écran).
+2. Renseigner `ADDR_SONDE_BAIN`/`ADDR_SONDE_LASER` dans `config.h` (depuis le 2026-11-25, remplace `IDX_SONDE_*`) — adresses imprimées sur le moniteur série au boot ; identifier laquelle est le bain en réchauffant une sonde à la main.
 
 ## PCB — 3 cartes (vérifiés le 2026-11-23)
 
@@ -538,7 +550,7 @@ La découpeuse a déjà une **chaîne de sécurité câblée en dur** : `SW LASE
 
 **La chaîne câblée reste intacte.** L'ESP32 ne fait que **lire** chaque contact ; son relais de sécurité reste **un maillon série de plus**, jamais la seule grille. Un ESP32 planté (relais collé) ne peut alors pas autoriser le tir capot ouvert — la chaîne série physique tient toujours.
 
-Option écartée : ESP32 comme seule grille (imposerait un *readback* obligatoire du relais + watchdog — trop critique pour un tube 110 W).
+Option écartée : ESP32 comme seule grille (imposerait un *readback* obligatoire du relais + watchdog — trop critique pour un tube 150 W crête / 130 W continu).
 
 ### Raccordement — NE PAS dériver les contacts direct sur GPIO
 
