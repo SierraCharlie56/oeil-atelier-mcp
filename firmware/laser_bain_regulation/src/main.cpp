@@ -298,23 +298,26 @@ void updateDisplay() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
+  // OLED bicolore : bande JAUNE = lignes 0-15 (16 px), BLEU = lignes 16-63.
+  // Statut sécurité en taille 2 (16 px de haut) centré dans la bande jaune —
+  // informatif uniquement, les LED rouge/verte restent seules garantes
+  // (voir updateLEDs()), jamais l'écran.
+  const char* status = relayClosed ? "AUTORISE" : "BLOQUE";
+  display.setTextSize(2);
+  display.setCursor((SCREEN_WIDTH - (int)strlen(status) * 12) / 2, 0);
+  display.print(status);
+
+  // Zone bleue : températures puis cause du blocage / bypass.
   display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("Bain: ");
+  display.setCursor(0, 22);
+  display.print("Bain:  ");
   if (isnan(bathTemp)) display.print("---"); else display.printf("%.1fC", bathTemp);
 
-  display.setCursor(0, 14);
+  display.setCursor(0, 36);
   display.print("Laser: ");
   if (isnan(laserTemp)) display.print("---"); else display.printf("%.1fC", laserTemp);
 
-  // Statut sécurité affiché en plus gros, informatif uniquement — les LED
-  // rouge/verte restent seules garantes (voir updateLEDs()), jamais l'écran.
-  display.setTextSize(2);
-  display.setCursor(0, 30);
-  display.print(relayClosed ? "AUTORISE" : "BLOQUE");
-
-  display.setTextSize(1);
-  display.setCursor(0, 52);
+  display.setCursor(0, 54);
   if (bypassActive)            display.print("BYPASS ACTIF");
   else if (blockReason[0])     display.print(blockReason);
 
