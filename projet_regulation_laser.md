@@ -48,7 +48,7 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [ ] **OLED SSD1306 : chauffait fort sur le banc le 2026-11-25** (débranché) — vérifier la sérigraphie VCC/GND du module (ordre GND-VCC ou VCC-GND selon fabricant), ohmmètre VCC–GND module seul, 3V3 de l'ESP32. Cause plausible (non prouvée) de la déconnexion du hub USB à 15:25.
 - [ ] Tester le compteur d'usure figé pendant un blocage (GPIO33 à la masse + sonde chauffée).
 - [ ] **Essais en eau avec relevés manuels** pour valider les plages théoriques (écart bain → départ laser sous charge, tenue du compresseur, blocages intempestifs) : fiche imprimable [fiche_releves_essais_eau.pdf](fiche_releves_essais_eau.pdf) (source HTML à côté), préparée le 2026-11-25.
-- [ ] **Mot de passe du site web à changer** : actuellement identique au nom d'utilisateur par défaut (constaté le 2026-11-25) — il commande le bypass total.
+- [ ] **`secrets.h` à refaire au déploiement** : le système sera installé **sur un autre site** (précisé le 2026-11-25) → nouveau WiFi (SSID + mot de passe) **et** nouveaux identifiants du site web. Le mot de passe web actuel du banc est identique au nom d'utilisateur par défaut : en choisir un solide, il commande le bypass total.
 - [ ] Réception des PCB → montage, test du contacteur de débit sur banc, essais secteur avec lampe en charge.
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
