@@ -3,3 +3,7 @@
 *.py.v[0-9]*
 __pycache__/
 *.pyc
+
+# Firmware : identifiants et cache de build jamais versionnés
+secrets.h
+.pio/

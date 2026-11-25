@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fiche de relevés — essais en eau, régulation bain laser</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm 10mm 10mm 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  h1 { font-size: 14pt; margin: 0 0 1mm 0; }
+  h2 { font-size: 11pt; margin: 3mm 0 1.5mm 0; }
+  .sub { font-size: 8.5pt; color: #444; margin-bottom: 2.5mm; }
+  .row { display: flex; gap: 4mm; }
+  .box { border: 1px solid #333; border-radius: 1.5mm; padding: 2mm 3mm; }
+  .infos { flex: 1.1; }
+  .infos table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .infos table td { padding: 1.6mm 1mm 0.6mm 1mm; font-size: 9pt; }
+  .infos .lbl { white-space: nowrap; }
+  .infos .fill { border-bottom: 1px dotted #555; }
+  .seuils { flex: 1.6; font-size: 8.5pt; }
+  .seuils table { border-collapse: collapse; width: 100%; }
+  .seuils th, .seuils td { border-bottom: 1px solid #bbb; padding: 0.8mm 1.5mm; text-align: left; }
+  .seuils th { background: #eee; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.grille { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  table.grille th { background: #e6e6e6; font-size: 8pt; line-height: 1.15; padding: 1mm 0.8mm; border: 1px solid #333; vertical-align: bottom; }
+  table.grille td { border: 1px solid #555; height: 7.1mm; font-size: 9pt; padding: 0 1mm; }
+  table.grille tr:nth-child(even) td { background: #fafafa; }
+  .unit { font-weight: normal; color: #444; }
+  .page2 { page-break-before: always; }
+  .note { font-size: 8.3pt; color: #333; margin-top: 1.5mm; }
+  .q td { height: 12mm; border-bottom: 1px dotted #555; vertical-align: top; padding-top: 1mm; }
+  .q td.lbl { width: 42%; padding-right: 3mm; border-bottom: 1px solid #bbb; }
+  .alerte { font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Fiche de relevés — essais en eau, régulation bain laser</h1>
+<div class="sub">Tube CO2 150 W crête / 130 W continu · bain 30 L · consigne 22 °C · firmware du 2026-11-25 (sondes par adresse ROM, sonde laser au <b>départ</b>, watchdog) · lecture des valeurs : site web de l'ESP32, auto-rafraîchi toutes les 5 s</div>
+
+<div class="row">
+  <div class="box infos">
+    <table>
+      <colgroup><col style="width:27%"><col style="width:23%"><col style="width:26%"><col style="width:24%"></colgroup>
+      <tr><td class="lbl">Date :</td><td class="fill"></td><td class="lbl">Opérateur :</td><td class="fill"></td></tr>
+      <tr><td class="lbl">T ambiante atelier :</td><td class="fill"></td><td class="lbl">T bain au départ :</td><td class="fill"></td></tr>
+      <tr><td class="lbl">Débit eau laser :</td><td class="fill"></td><td class="lbl">Travail / matériau :</td><td class="fill"></td></tr>
+      <tr><td class="lbl">Puissance réglée :</td><td class="fill"></td><td class="lbl">Durée de découpe :</td><td class="fill"></td></tr>
+    </table>
+    <div class="note">Relever toutes les <b>2 à 5 min</b> pendant la découpe, <b>et</b> à chaque démarrage ou arrêt du compresseur ou de la canne, <b>et</b> à tout blocage.</div>
+  </div>
+  <div class="box seuils">
+    <table>
+      <tr><th>Rappel des seuils (config.h)</th><th>Action</th><th>Retour</th></tr>
+      <tr><td>Compresseur</td><td class="num">ON si bain &gt; 22,5 °C</td><td class="num">OFF si bain &lt; 22,0 °C</td></tr>
+      <tr><td>Anti-cycling compresseur</td><td class="num">≥ 2 min ON avant arrêt</td><td class="num">≥ 4 min OFF avant redémarrage</td></tr>
+      <tr><td>Canne chauffante</td><td class="num">ON si bain &lt; 21,0 °C</td><td class="num">OFF si bain &gt; 21,5 °C</td></tr>
+      <tr><td class="alerte">Sécurité bain</td><td class="num">BLOQUÉ si &gt; 26 °C</td><td class="num">ré-autorisé &lt; 25 °C</td></tr>
+      <tr><td class="alerte">Sécurité eau laser (départ)</td><td class="num">BLOQUÉ si &gt; 25 °C</td><td class="num">ré-autorisé &lt; 24 °C</td></tr>
+      <tr><td class="alerte">Sécurité débit</td><td class="num">BLOQUÉ dès perte</td><td class="num">après 5 s de débit stable</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2>Relevés</h2>
+<table class="grille">
+  <colgroup>
+    <col style="width:6%"><col style="width:8%"><col style="width:6%">
+    <col style="width:8%"><col style="width:8%"><col style="width:8%">
+    <col style="width:9%"><col style="width:7%"><col style="width:15%"><col style="width:25%">
+  </colgroup>
+  <tr>
+    <th>Heure</th>
+    <th>Puissance<br><span class="unit">% ou W</span></th>
+    <th>Découpe<br><span class="unit">O / N</span></th>
+    <th>T eau bain<br><span class="unit">°C</span></th>
+    <th>T eau laser<br><span class="unit">°C</span></th>
+    <th>Écart<br>laser − bain<br><span class="unit">°C</span></th>
+    <th>Compres&shy;seur<br><span class="unit">ON / OFF</span></th>
+    <th>Canne<br><span class="unit">ON / OFF</span></th>
+    <th>Sécurité<br><span class="unit">AUTORISÉ / BLOQUÉ + cause</span></th>
+    <th>Observations<br><span class="unit">bruit, givre, bulles, comportement du tube…</span></th>
+  </tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<div class="page2">
+<h2>Relevés (suite)</h2>
+<table class="grille">
+  <colgroup>
+    <col style="width:6%"><col style="width:8%"><col style="width:6%">
+    <col style="width:8%"><col style="width:8%"><col style="width:8%">
+    <col style="width:9%"><col style="width:7%"><col style="width:15%"><col style="width:25%">
+  </colgroup>
+  <tr>
+    <th>Heure</th>
+    <th>Puissance<br><span class="unit">% ou W</span></th>
+    <th>Découpe<br><span class="unit">O / N</span></th>
+    <th>T eau bain<br><span class="unit">°C</span></th>
+    <th>T eau laser<br><span class="unit">°C</span></th>
+    <th>Écart<br>laser − bain<br><span class="unit">°C</span></th>
+    <th>Compres&shy;seur<br><span class="unit">ON / OFF</span></th>
+    <th>Canne<br><span class="unit">ON / OFF</span></th>
+    <th>Sécurité<br><span class="unit">AUTORISÉ / BLOQUÉ + cause</span></th>
+    <th>Observations</th>
+  </tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+  <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<div class="row" style="margin-top:3mm">
+  <div style="flex:1">
+    <h2 style="margin-top:0">Cycles du compresseur</h2>
+    <table class="grille">
+      <tr>
+        <th>Démarrage<br><span class="unit">heure</span></th>
+        <th>T bain au<br>démarrage <span class="unit">°C</span></th>
+        <th>Arrêt<br><span class="unit">heure</span></th>
+        <th>T bain à<br>l'arrêt <span class="unit">°C</span></th>
+        <th>Durée ON<br><span class="unit">min</span></th>
+        <th>Durée OFF<br>précédente <span class="unit">min</span></th>
+        <th>Découpe pendant<br>le cycle ? <span class="unit">O / N</span></th>
+      </tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </table>
+  </div>
+  <div style="flex:1">
+    <h2 style="margin-top:0">Conclusions de l'essai</h2>
+    <table style="width:100%; border-collapse:collapse" class="q">
+      <tr><td class="lbl">Écart max <b>laser − bain</b> en découpe (°C) — marge avant 25 °C ?</td><td></td></tr>
+      <tr><td class="lbl">T bain <b>max</b> atteinte compresseur en marche (°C) — le compresseur suit-il la charge ?</td><td></td></tr>
+      <tr><td class="lbl">Blocage intempestif pendant une découpe ? (heure, cause)</td><td></td></tr>
+      <tr><td class="lbl">Seuils à ajuster ? (laser 25 °C, bain 26 °C, compresseur 22,0 / 22,5 °C)</td><td></td></tr>
+    </table>
+  </div>
+</div>
+<div class="note">Rappel : la sonde laser est au <b>départ</b> (eau qui entre dans le tube). L'écart laser − bain mesure donc ce qu'ajoute le serpentin d'échange, pas l'échauffement dans le tube. Reporter les conclusions dans <i>projet_regulation_laser.md</i>.</div>
+</div>
+
+</body>
+</html>

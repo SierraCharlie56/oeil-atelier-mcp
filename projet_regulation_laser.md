@@ -47,6 +47,8 @@ Réguler à **22°C** l'eau d'un bain tampon de 30L qui refroidit le circuit de 
 - [x] **PCB finalisés et vérifiés le 2026-11-23** (3 cartes : automate, alimentation, affichage — voir section « PCB »). **DRC EasyEDA validée le 2026-11-24** (4 écarts d'isolement MOC acceptés). **Gerber vérifiés et PCB commandés le 2026-11-24.**
 - [ ] **OLED SSD1306 : chauffait fort sur le banc le 2026-11-25** (débranché) — vérifier la sérigraphie VCC/GND du module (ordre GND-VCC ou VCC-GND selon fabricant), ohmmètre VCC–GND module seul, 3V3 de l'ESP32. Cause plausible (non prouvée) de la déconnexion du hub USB à 15:25.
 - [ ] Tester le compteur d'usure figé pendant un blocage (GPIO33 à la masse + sonde chauffée).
+- [ ] **Essais en eau avec relevés manuels** pour valider les plages théoriques (écart bain → départ laser sous charge, tenue du compresseur, blocages intempestifs) : fiche imprimable [fiche_releves_essais_eau.pdf](fiche_releves_essais_eau.pdf) (source HTML à côté), préparée le 2026-11-25.
+- [ ] **Mot de passe du site web à changer** : actuellement identique au nom d'utilisateur par défaut (constaté le 2026-11-25) — il commande le bypass total.
 - [ ] Réception des PCB → montage, test du contacteur de débit sur banc, essais secteur avec lampe en charge.
 - [x] **Changement de carte (2026-09-05)** : ESP32-WROOM-32 DevKit nu + écran OLED SSD1306 I2C 128×64 séparé, remplace la carte à écran ST7789 intégré endommagé. Firmware migré et recompilé (voir section Firmware). Fait : OLED câblé, carte flashée et affichage validé sur le matériel réel le 2026-11-10.
 
@@ -258,6 +260,8 @@ Le relais thermique n'est qu'un maillon de la chaîne de sécurité MYJG (en sé
 ## Firmware (2026-09-03)
 
 Code source : `/mnt/nas-documents/_CH/PlatformIO/Projets(linux)/laser_bain_regulation/` (PlatformIO, ESP32-WROOM-32, framework Arduino) — copie de sauvegarde/référence.
+
+**Copie versionnée sur GitHub depuis le 2026-11-25 :** [`firmware/laser_bain_regulation/`](firmware/laser_bain_regulation/) (dépôt **public**) — `platformio.ini`, `src/main.cpp`, `src/config.h`, `src/secrets.h.example`. **`secrets.h` n'est jamais versionné** (`.gitignore` du dépôt et du projet). La copie de travail reste `PlatformIO-local` : après chaque modification, recopier `platformio.ini` et `src/` (sauf `secrets.h`) vers le NAS **et** vers le dépôt.
 
 ⚠️ **Compiler depuis la copie locale**, pas depuis le NAS : `/home/ch/PlatformIO-local/laser_bain_regulation/`. Le dossier `.pio` (cache de build) corrompt les archives sur ce montage SMB (erreur `file format not recognized` rencontrée le 2026-09-03) — build local confirmé propre (RAM 13,9%, Flash 62,2%).
 
