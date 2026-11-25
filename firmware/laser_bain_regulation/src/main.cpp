@@ -398,7 +398,9 @@ void handleRoot() {
       int idx = ((int)decoupeuseLog.nextIdx - 1 - i + DECOUPEUSE_LOG_SIZE * 2) % DECOUPEUSE_LOG_SIZE;
       html += "<li>" + formatTimestamp(decoupeuseLog.timestamps[idx]);
       html += " - duree : " + formatDuration(decoupeuseLog.durationsSec[idx]);
-      if (idx == curIdx && decoupeuseOn) html += " (en cours)";
+      // "En cours" = session réellement comptée (découpeuse ON ET sécurité autorisée),
+      // même état que celui utilisé par updateDecoupeuseTimer().
+      if (idx == curIdx && decoupeuseEffectivePrevOn) html += " (en cours)";
       html += "</li>";
     }
   }
